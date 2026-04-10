@@ -1,37 +1,43 @@
 body {
-    background-color: #f0f0f0;
-    font-family: 'Consolas', 'Courier New', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    background-color: #1a1a1a;
+    color: #fff;
+    font-family: 'Consolas', monospace;
     margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
 }
 
-.main-container {
+.split-layout {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.terminal-section {
+    flex: 1;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 30px;
-    width: 90%;
-    max-width: 900px;
+    justify-content: center;
 }
 
 .terminal-window {
     background-color: #000;
-    border: 1px solid #ccc;
+    border: 1px solid #333;
     border-radius: 6px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    height: 80vh;
     overflow: hidden;
 }
 
 .terminal-header {
-    background-color: #e0e0e0;
+    background-color: #2d2d2d;
     padding: 8px 15px;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid #111;
 }
 
 .control {
@@ -46,83 +52,54 @@ body {
 .control.green { background-color: #27c93f; }
 
 .terminal-header .title {
-    color: #333;
+    color: #ccc;
     font-size: 14px;
-    font-weight: bold;
     margin-left: 10px;
 }
 
 #terminal-container {
-    height: 500px;
+    height: calc(100% - 30px);
     padding: 10px;
 }
 
-.controls {
+.whip-section {
+    flex: 1;
+    position: relative;
+    background: radial-gradient(circle, #2a2a2a 0%, #111 100%);
+    border-left: 2px dashed #444;
+}
+
+.instruction-text {
+    position: absolute;
+    top: 20px;
+    width: 100%;
     text-align: center;
+    color: #888;
+    pointer-events: none;
+    font-size: 16px;
+    letter-spacing: 1px;
 }
 
-/* Whip Animation CSS */
-.whip-container {
-    cursor: pointer;
-    display: inline-block;
-    padding: 20px;
-    border-radius: 50%;
-    background-color: #fff;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transition: background-color 0.2s;
-    user-select: none;
+#whipCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
 }
 
-.whip-container:hover {
-    background-color: #f9f9f9;
+#whipCanvas:active {
+    cursor: grabbing;
 }
 
-.whip-svg {
-    width: 80px;
-    height: 80px;
-    transform-origin: bottom left;
-    transition: transform 0.1s ease-in-out;
-}
-
-/* Wind up on mousedown */
-.whip-container:active .whip-svg {
-    transform: rotate(-30deg);
-}
-
-/* The crack animation class added via JS */
-.whip-container.cracking .whip-svg {
-    animation: crackWhip 0.2s ease-out forwards;
-}
-
-@keyframes crackWhip {
-    0% { transform: rotate(-30deg); }
-    50% { transform: rotate(45deg) scaleX(1.1); }
-    100% { transform: rotate(0deg) scaleX(1); }
-}
-
-.instruction {
-    color: #666;
-    font-size: 14px;
-    margin-top: 15px;
-    font-family: sans-serif;
-}
-
-/* Terminal shake effect */
+/* Terminal Shake Animation */
 @keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    10% { transform: translate(-1px, -2px) rotate(-1deg); }
-    20% { transform: translate(-3px, 0px) rotate(1deg); }
-    30% { transform: translate(3px, 2px) rotate(0deg); }
-    40% { transform: translate(1px, -1px) rotate(1deg); }
-    50% { transform: translate(-1px, 2px) rotate(-1deg); }
-    60% { transform: translate(-3px, 1px) rotate(0deg); }
-    70% { transform: translate(3px, 1px) rotate(-1deg); }
-    80% { transform: translate(-1px, -1px) rotate(1deg); }
-    90% { transform: translate(1px, 2px) rotate(0deg); }
-    100% { transform: translate(1px, -2px) rotate(-1deg); }
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px) rotate(-1deg); }
+    40% { transform: translateX(5px) rotate(1deg); }
+    60% { transform: translateX(-5px) rotate(-1deg); }
+    80% { transform: translateX(5px) rotate(1deg); }
 }
 
 .terminal-window.shaking {
-    animation: shake 0.4s;
-    animation-iteration-count: 1;
+    animation: shake 0.3s ease-in-out;
 }
