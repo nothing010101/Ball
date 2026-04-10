@@ -2,129 +2,191 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bumi 3D Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Flappy Rocket - Space Edition</title>
     <style>
-        body { margin: 0; background: radial-gradient(circle, #111, #000); overflow: hidden; font-family: sans-serif; }
-        #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; }
-        #stats { font-size: 0.8em; color: #00ffcc; margin-top: 5px; }
-        canvas { display: block; }
+        body { margin: 0; background: #050505; color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
+        canvas { display: block; margin: 0 auto; background: linear-gradient(#000, #111); }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; }
+        #score { font-size: 48px; font-weight: bold; text-shadow: 0 0 10px #00ffcc; }
+        .msg { font-size: 18px; color: #aaa; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h1 style="margin:0; font-size: 1.2em;">Earth Meteor Simulation</h1>
-    <div id="stats">Ketuk layar untuk luncurkan meteor!</div>
+    <div id="score">0</div>
+    <div class="msg" id="msg">Tap untuk Terbang</div>
 </div>
 
-<script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-    }
-</script>
+<canvas id="game"></canvas>
 
-<script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+<script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const msgEl = document.getElementById('msg');
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    document.body.appendChild(renderer.domElement);
+    canvas.width = window.innerWidth > 500 ? 400 : window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // Pencahayaan
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
-    sunLight.position.set(5, 3, 5);
-    scene.add(sunLight);
-    scene.add(new THREE.AmbientLight(0x333333));
+    // Game Constants
+    const gravity = 0.25;
+    const flap = -5;
+    const pipeWidth = 60;
+    const pipeGap = 160;
+    const pipeSpeed = 2.5;
 
-    // Loading Tekstur dengan Fallback
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.setCrossOrigin('anonymous');
+    let bird = { x: 50, y: canvas.height/2, v: 0, radius: 15 };
+    let pipes = [];
+    let score = 0;
+    let gameActive = false;
+    let frame = 0;
 
-    // Link tekstur cadangan yang lebih stabil
-    const earthTexture = textureLoader.load(
-        'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg',
-        function(texture) {
-            console.log("Tekstur berhasil dimuat");
-        },
-        undefined,
-        function(err) {
-            console.error("Gagal muat tekstur, menggunakan mode warna.");
-            earthMaterial.color.setHex(0x2244ff); // Jika gagal, jadi biru laut
-        }
-    );
-
-    // Objek Bumi
-    const earthGeometry = new THREE.SphereGeometry(2, 64, 64);
-    const earthMaterial = new THREE.MeshPhongMaterial({ 
-        map: earthTexture,
-        shininess: 15
-    });
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    scene.add(earth);
-
-    // Bintang Background
-    const starsGeo = new THREE.BufferGeometry();
-    const starsMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.7 });
-    const starCoords = [];
-    for(let i=0; i<10000; i++) {
-        starCoords.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
-    }
-    starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
-    scene.add(new THREE.Points(starsGeo, starsMat));
-
-    // Kontrol & Meteor
-    const controls = new OrbitControls(camera, renderer.domElement);
-    camera.position.z = 8;
-    const meteors = [];
-
-    function spawnMeteor() {
-        const geo = new THREE.IcosahedronGeometry(0.15, 0);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
-        const m = new THREE.Mesh(geo, mat);
-        
-        const angle = Math.random() * Math.PI * 2;
-        m.position.set(Math.cos(angle)*12, Math.sin(angle)*12, (Math.random()-0.5)*5);
-        m.userData.dir = new THREE.Vector3(0,0,0).subVectors(earth.position, m.position).normalize();
-        
-        scene.add(m);
-        meteors.push(m);
+    function reset() {
+        bird.y = canvas.height/2;
+        bird.v = 0;
+        pipes = [];
+        score = 0;
+        frame = 0;
+        scoreEl.innerText = score;
+        msgEl.style.opacity = 1;
+        gameActive = false;
+        draw();
     }
 
-    window.addEventListener('pointerdown', spawnMeteor);
-
-    function animate() {
-        requestAnimationFrame(animate);
-        earth.rotation.y += 0.002;
+    function createPipe() {
+        let minPipeHeight = 50;
+        let maxPipeHeight = canvas.height - pipeGap - minPipeHeight;
+        let height = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1) + minPipeHeight);
         
-        meteors.forEach((m, idx) => {
-            m.position.addScaledVector(m.userData.dir, 0.15);
-            if(m.position.distanceTo(earth.position) < 2) {
-                scene.remove(m);
-                meteors.splice(idx, 1);
-                // Efek kilatan singkat
-                earthMaterial.emissive.setHex(0x330000);
-                setTimeout(() => earthMaterial.emissive.setHex(0x000000), 100);
+        pipes.push({
+            x: canvas.width,
+            top: height,
+            passed: false
+        });
+    }
+
+    function update() {
+        if (!gameActive) return;
+
+        frame++;
+        bird.v += gravity;
+        bird.y += bird.v;
+
+        // Spawn pipes
+        if (frame % 90 === 0) createPipe();
+
+        // Update pipes
+        for (let i = pipes.length - 1; i >= 0; i--) {
+            pipes[i].x -= pipeSpeed;
+
+            // Collision check
+            if (
+                bird.x + bird.radius > pipes[i].x && 
+                bird.x - bird.radius < pipes[i].x + pipeWidth &&
+                (bird.y - bird.radius < pipes[i].top || bird.y + bird.radius > pipes[i].top + pipeGap)
+            ) {
+                gameOver();
             }
+
+            // Score check
+            if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
+                score++;
+                scoreEl.innerText = score;
+                pipes[i].passed = true;
+            }
+
+            // Remove off-screen pipes
+            if (pipes[i].x + pipeWidth < 0) pipes.splice(i, 1);
+        }
+
+        // Boundary check
+        if (bird.y + bird.radius > canvas.height || bird.y - bird.radius < 0) {
+            gameOver();
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Stars (Simple)
+        ctx.fillStyle = "white";
+        for(let i=0; i<20; i++) {
+            ctx.fillRect((i*77)%canvas.width, (frame + i*99)%canvas.height, 2, 2);
+        }
+
+        // Draw Pipes (Nebula/Space Pipes)
+        pipes.forEach(p => {
+            ctx.fillStyle = "#222";
+            ctx.strokeStyle = "#00ffcc";
+            ctx.lineWidth = 2;
+            
+            // Top Pipe
+            ctx.fillRect(p.x, 0, pipeWidth, p.top);
+            ctx.strokeRect(p.x, 0, pipeWidth, p.top);
+            
+            // Bottom Pipe
+            ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, canvas.height);
+            ctx.strokeRect(p.x, p.top + pipeGap, pipeWidth, canvas.height);
         });
 
-        controls.update();
-        renderer.render(scene, camera);
+        // Draw Rocket (Bird)
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(Math.min(Math.PI/4, Math.max(-Math.PI/4, bird.v * 0.1)));
+        
+        // Body
+        ctx.fillStyle = "#ff3366";
+        ctx.beginPath();
+        ctx.arc(0, 0, bird.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Window
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(8, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
-    animate();
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+    function gameOver() {
+        gameActive = false;
+        msgEl.innerText = "Game Over! Tap untuk Reset";
+        msgEl.style.opacity = 1;
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('mousedown', () => {
+        if (!gameActive) {
+            if (msgEl.innerText.includes("Over")) {
+                reset();
+            }
+            gameActive = true;
+            msgEl.style.opacity = 0;
+        }
+        bird.v = flap;
     });
+
+    window.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!gameActive) {
+            if (msgEl.innerText.includes("Over")) {
+                reset();
+            }
+            gameActive = true;
+            msgEl.style.opacity = 0;
+        }
+        bird.v = flap;
+    }, {passive: false});
+
+    reset();
+    loop();
 </script>
 </body>
 </html>
