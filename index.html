@@ -4,661 +4,772 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WHIP TERMINAL</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; cursor: none !important; }
+* { margin: 0; padding: 0; box-sizing: border-box; cursor: none !important; }
 
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+:root {
+  --bg: #0f0f0f;
+  --bg2: #141414;
+  --bg3: #1a1a1a;
+  --border: #2a2a2a;
+  --border2: #333;
+  --text: #e8e8e8;
+  --text2: #888;
+  --text3: #555;
+  --green: #4ade80;
+  --green-dim: #1a3a2a;
+  --green-muted: #2d6e4a;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --mono: 'JetBrains Mono', monospace;
+}
 
-  :root {
-    --green: #00ff41;
-    --dark-green: #003b00;
-    --bg: #0a0a0a;
-    --amber: #ffb000;
-    --red: #ff2222;
-    --whip-color: #c8a46e;
-  }
+html, body {
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+}
 
-  body {
-    background: var(--bg);
-    color: var(--green);
-    font-family: 'Share Tech Mono', monospace;
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-    position: relative;
-  }
+#app { display: flex; flex-direction: column; height: 100vh; }
 
-  /* Scanlines */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.15) 2px,
-      rgba(0,0,0,0.15) 4px
-    );
-    pointer-events: none;
-    z-index: 999;
-  }
+#topbar {
+  height: 44px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
 
-  /* CRT vignette */
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.8) 100%);
-    pointer-events: none;
-    z-index: 998;
-  }
+.topbar-logo {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-  #terminal {
-    position: absolute;
-    inset: 20px;
-    border: 1px solid var(--green);
-    border-radius: 4px;
-    box-shadow: 0 0 20px rgba(0,255,65,0.3), inset 0 0 30px rgba(0,0,0,0.5);
-    overflow: hidden;
-    background: rgba(0,10,0,0.95);
-  }
+.topbar-logo span { color: var(--text2); font-weight: 300; font-size: 12px; }
+.topbar-sep { flex: 1; }
 
-  #terminal-header {
-    background: var(--dark-green);
-    padding: 6px 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid var(--green);
-    font-family: 'VT323', monospace;
-    font-size: 18px;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px var(--green);
-  }
+.topbar-badge {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid var(--green-muted);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
 
-  .dot { width: 10px; height: 10px; border-radius: 50%; }
-  .dot.r { background: #ff5f57; }
-  .dot.y { background: #ffbd2e; }
-  .dot.g { background: #28ca41; }
+.topbar-addr {
+  color: var(--text2);
+  font-size: 11px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+}
 
-  #output-area {
-    padding: 12px;
-    height: calc(100% - 80px);
-    overflow-y: auto;
-    font-size: 13px;
-    line-height: 1.6;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green) transparent;
-  }
+#main { display: flex; flex: 1; overflow: hidden; }
 
-  #output-area::-webkit-scrollbar { width: 6px; }
-  #output-area::-webkit-scrollbar-thumb { background: var(--green); }
+/* CHAT */
+#chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
 
-  .line { margin: 1px 0; white-space: pre-wrap; word-break: break-all; }
-  .line.prompt { color: var(--green); text-shadow: 0 0 6px var(--green); }
-  .line.output { color: #8bff8b; }
-  .line.error { color: var(--red); text-shadow: 0 0 6px var(--red); }
-  .line.info { color: var(--amber); text-shadow: 0 0 6px var(--amber); }
-  .line.system { color: #00aaff; text-shadow: 0 0 6px #00aaff; }
-  .line.whip { color: #ffdd88; font-family: 'VT323', monospace; font-size: 16px; letter-spacing: 1px; }
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
 
-  #input-row {
-    position: absolute;
-    bottom: 0;
-    left: 0; right: 0;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    border-top: 1px solid rgba(0,255,65,0.3);
-    background: rgba(0,5,0,0.9);
-    gap: 8px;
-  }
+#messages::-webkit-scrollbar { width: 4px; }
+#messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-  #prompt-label {
-    color: var(--green);
-    text-shadow: 0 0 8px var(--green);
-    white-space: nowrap;
-    font-size: 13px;
-  }
+.msg { line-height: 1.65; font-size: 13px; }
+.msg-bot { color: var(--text); }
 
-  #cmd-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--green);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    text-shadow: 0 0 6px var(--green);
-    caret-color: var(--green);
-  }
+.msg-user {
+  color: var(--text2);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
 
-  /* Speed indicator */
-  #speed-hud {
-    position: fixed;
-    top: 30px;
-    right: 40px;
-    font-family: 'VT323', monospace;
-    font-size: 22px;
-    color: var(--amber);
-    text-shadow: 0 0 10px var(--amber);
-    z-index: 100;
-    pointer-events: none;
-    text-align: right;
-    line-height: 1.3;
-  }
+.msg-user::before {
+  content: '>';
+  color: var(--green);
+  font-weight: 600;
+  flex-shrink: 0;
+}
 
-  #whip-count-display {
-    color: var(--red);
-    text-shadow: 0 0 12px var(--red);
-    font-size: 28px;
-  }
+.msg-suggestion {
+  color: var(--text2);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 1px 0;
+  transition: color 0.1s;
+}
 
-  /* WHIP CURSOR CANVAS */
-  #whip-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 9999;
-  }
+.msg-suggestion::before { content: '>'; color: var(--text3); flex-shrink: 0; }
+.msg-suggestion:hover { color: var(--text); }
 
-  /* Flash on crack */
-  #crack-flash {
-    position: fixed;
-    inset: 0;
-    background: rgba(255,255,200,0);
-    pointer-events: none;
-    z-index: 9997;
-    transition: background 0.05s;
-  }
+.msg-whip { color: var(--amber); font-size: 12px; }
+.msg-error { color: var(--red); font-size: 12px; }
+.msg-system { color: var(--text3); font-size: 11px; margin-bottom: 6px; }
 
-  /* Crack text */
-  #crack-text {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9998;
-    font-family: 'VT323', monospace;
-    font-size: 32px;
-    color: #fff;
-    text-shadow: 0 0 20px #ff0, 0 0 40px #f80;
-    opacity: 0;
-    transform: scale(1);
-    transition: opacity 0.3s, transform 0.3s;
-  }
+/* INPUT */
+#input-area {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
 
-  #crack-text.show {
-    opacity: 1;
-    transform: scale(1.3);
-  }
+#input-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
 
-  /* Spark particles */
-  .spark {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9996;
-    border-radius: 50%;
-    animation: spark-fly 0.4s ease-out forwards;
-  }
+.model-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--text2);
+}
 
-  @keyframes spark-fly {
-    0% { transform: translate(0,0) scale(1); opacity: 1; }
-    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
-  }
+.model-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); }
 
-  /* Screen shake */
-  @keyframes shake {
-    0%,100% { transform: translate(0,0); }
-    20% { transform: translate(-3px, 2px); }
-    40% { transform: translate(3px,-2px); }
-    60% { transform: translate(-2px,3px); }
-    80% { transform: translate(2px,-1px); }
-  }
+.speed-badge {
+  background: var(--green-dim);
+  border: 1px solid var(--green-muted);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--green);
+}
 
-  .shaking {
-    animation: shake 0.15s ease-in-out;
-  }
+.flex-sep { flex: 1; }
+.whip-counter { font-size: 11px; color: var(--amber); }
+
+#input-box {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 10px 44px 10px 12px;
+  position: relative;
+  transition: border-color 0.15s;
+}
+
+#input-box:focus-within {
+  border-color: var(--green-muted);
+  box-shadow: 0 0 0 2px rgba(74,222,128,0.06);
+}
+
+#cmd-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 13px;
+  caret-color: var(--green);
+}
+
+#send-btn {
+  position: absolute;
+  right: 8px; bottom: 7px;
+  width: 28px; height: 28px;
+  background: var(--green);
+  border: none; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+
+#send-btn:hover { background: #22c55e; }
+#send-btn svg { width: 14px; height: 14px; fill: #000; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.sidebar-section { border-bottom: 1px solid var(--border); }
+
+.sidebar-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-header:hover { background: var(--bg3); }
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.sidebar-arrow { color: var(--text3); font-size: 10px; }
+
+.sidebar-content { padding: 0 16px 12px; }
+
+.wallet-balance {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 8px 0 4px;
+  letter-spacing: -0.5px;
+}
+
+.wallet-addr { color: var(--text3); font-size: 11px; margin-bottom: 10px; }
+
+.wallet-actions { display: flex; gap: 8px; }
+
+.w-btn {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text2);
+  font-family: var(--mono);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.w-btn:hover { border-color: var(--border2); color: var(--text); }
+
+.token-item {
+  display: flex;
+  align-items: center;
+  padding: 7px 0;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.token-item:last-child { border-bottom: none; }
+
+.token-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center; justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.token-info { flex: 1; min-width: 0; }
+.token-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.token-chain { font-size: 10px; color: var(--text3); }
+.token-val { text-align: right; }
+.token-amount { font-size: 12px; font-weight: 500; color: var(--text); }
+.token-usd { font-size: 10px; color: var(--text3); }
+
+.security-row {
+  display: flex; align-items: center; gap: 8px; padding: 5px 0;
+}
+
+.sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.slabel { font-size: 11px; color: var(--text2); }
+.sstatus { margin-left: auto; font-size: 10px; }
+
+/* WHIP CANVAS */
+#whip-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#crack-flash {
+  position: fixed; inset: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 9997;
+  transition: background 0.05s;
+}
+
+#crack-text {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--amber);
+  opacity: 0;
+  transform: translateY(0);
+  transition: opacity 0.2s, transform 0.2s;
+  background: rgba(20,12,0,0.9);
+  border: 1px solid rgba(245,158,11,0.5);
+  border-radius: 4px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+#crack-text.show { opacity: 1; transform: translateY(-8px); }
+
+.spark {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9996;
+  border-radius: 50%;
+  animation: spark-fly 0.35s ease-out forwards;
+}
+
+@keyframes spark-fly {
+  0% { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx),var(--dy)) scale(0); opacity: 0; }
+}
+
+@keyframes shake {
+  0%,100% { transform: translate(0,0); }
+  25% { transform: translate(-2px,1px); }
+  75% { transform: translate(2px,-1px); }
+}
+
+.shaking { animation: shake 0.1s ease-in-out; }
 </style>
 </head>
 <body>
 
-<div id="crack-flash"></div>
-<div id="crack-text" id="crack-text">CRACK!</div>
 <canvas id="whip-canvas"></canvas>
+<div id="crack-flash"></div>
+<div id="crack-text">+0.5x</div>
 
-<div id="speed-hud">
-  <div>SPEED: <span id="speed-val">1.0</span>x</div>
-  <div>WHIPS: <span id="whip-count-display">0</span></div>
-</div>
-
-<div id="terminal">
-  <div id="terminal-header">
-    <div class="dot r"></div>
-    <div class="dot y"></div>
-    <div class="dot g"></div>
-    &nbsp; WHIP-TERMINAL v2.6 — CRACK TO ACCELERATE
+<div id="app">
+  <div id="topbar">
+    <div class="topbar-logo">
+      🤖 whipterm <span>/ terminal</span>
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-badge" id="speed-badge">1.0x speed</div>
+    <div class="topbar-addr">0x4F2a...8B3c</div>
   </div>
-  <div id="output-area"></div>
-  <div id="input-row">
-    <span id="prompt-label">root@whip:~$</span>
-    <input id="cmd-input" type="text" autocomplete="off" spellcheck="false" autofocus />
+
+  <div id="main">
+    <div id="chat-panel">
+      <div id="messages">
+        <div class="msg msg-system">whip-terminal v2.6 — connected to Base · swing mouse fast to crack ⚡</div>
+        <div class="msg msg-bot">gm, how can I help you?</div>
+        <div class="msg msg-suggestion">Buy me $20 of $BNKR and sell when it pumps 10%</div>
+        <div class="msg msg-suggestion">Buy me $20 of $BNKR if price dips 10%</div>
+        <div class="msg msg-suggestion">Bridge $5 of ETH on Base to Solana</div>
+        <div class="msg msg-suggestion">Give me analysis of $BNKR over the last week</div>
+        <div class="msg msg-suggestion">Swap $5 of $BNKR on Base to SOL Solana</div>
+        <div class="msg msg-suggestion">Send $5 to @0xDeployer on X</div>
+        <div class="msg msg-suggestion">Sell all coins where balance is less than $5</div>
+        <div class="msg msg-suggestion">Deploy a coin on Base</div>
+      </div>
+
+      <div id="input-area">
+        <div id="input-meta">
+          <div class="model-badge">
+            <div class="model-dot"></div>
+            whip-ai-flash
+          </div>
+          <div class="speed-badge" id="speed-pill">⚡ 1.0x</div>
+          <div class="flex-sep"></div>
+          <div class="whip-counter">🔥 <span id="whip-count">0</span> cracks</div>
+        </div>
+        <div id="input-box">
+          <input id="cmd-input" type="text" placeholder="Type a command or swing mouse fast to crack..." autocomplete="off" spellcheck="false" autofocus />
+          <button id="send-btn" onclick="sendCmd()">
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <div class="sidebar-title"><span>◫</span> Wallet</div>
+          <div class="sidebar-arrow">▶</div>
+        </div>
+        <div class="sidebar-content">
+          <div class="wallet-balance">$142.80</div>
+          <div class="wallet-addr">0x4F2a...8B3c · Base</div>
+          <div class="wallet-actions">
+            <div class="w-btn">Swap</div>
+            <div class="w-btn">Send</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <div class="sidebar-title"><span>⚡</span> Your Tokens</div>
+          <div class="sidebar-arrow">▶</div>
+        </div>
+        <div class="sidebar-content">
+          <div class="token-item">
+            <div class="token-icon" style="color:#4ade80;border-color:#1a3a2a">ETH</div>
+            <div class="token-info">
+              <div class="token-name">Ethereum</div>
+              <div class="token-chain">Base</div>
+            </div>
+            <div class="token-val">
+              <div class="token-amount">0.042</div>
+              <div class="token-usd">$109.20</div>
+            </div>
+          </div>
+          <div class="token-item">
+            <div class="token-icon" style="color:#f59e0b;border-color:#3a2a0a">BNKR</div>
+            <div class="token-info">
+              <div class="token-name">$BNKR</div>
+              <div class="token-chain">Base</div>
+            </div>
+            <div class="token-val">
+              <div class="token-amount">2,400</div>
+              <div class="token-usd">$18.60</div>
+            </div>
+          </div>
+          <div class="token-item">
+            <div class="token-icon" style="color:#3b82f6;border-color:#0a1a3a">USDC</div>
+            <div class="token-info">
+              <div class="token-name">USD Coin</div>
+              <div class="token-chain">Base</div>
+            </div>
+            <div class="token-val">
+              <div class="token-amount">15.00</div>
+              <div class="token-usd">$15.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <div class="sidebar-title"><span>◈</span> Whip Security</div>
+          <div class="sidebar-arrow">▶</div>
+        </div>
+        <div class="sidebar-content">
+          <div class="security-row">
+            <div class="sdot" style="background:var(--green)"></div>
+            <div class="slabel">Crack detection</div>
+            <div class="sstatus" style="color:var(--green)">ACTIVE</div>
+          </div>
+          <div class="security-row">
+            <div class="sdot" style="background:var(--green)"></div>
+            <div class="slabel">Rope physics</div>
+            <div class="sstatus" style="color:var(--green)">OK</div>
+          </div>
+          <div class="security-row">
+            <div class="sdot" style="background:var(--amber)" id="limiter-dot"></div>
+            <div class="slabel">Speed limiter</div>
+            <div class="sstatus" style="color:var(--amber)" id="limiter-status">OFF</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <div class="sidebar-title"><span>◻</span> NFTs</div>
+          <div class="sidebar-arrow">▶</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <div class="sidebar-title"><span>○</span> Token Deployments (Legacy)</div>
+          <div class="sidebar-arrow">▶</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let mouseX = window.innerWidth/2, mouseY = window.innerHeight/2;
-let prevX = mouseX, prevY = mouseY;
-let whipCount = 0;
-let speedMultiplier = 1.0;
-let lastCrackTime = 0;
-let isTypingFast = false;
-
-// Whip segments (rope physics)
-const NUM_SEGMENTS = 18;
-const SEGMENT_LENGTH = 14;
-let segments = [];
-
-// Init segments at cursor
-function initSegments(x, y) {
-  segments = [];
-  for(let i = 0; i < NUM_SEGMENTS; i++) {
-    segments.push({ x: x - i * 2, y: y + i * 1.5, vx: 0, vy: 0 });
-  }
-}
-initSegments(mouseX, mouseY);
-
-// ─── CANVAS ──────────────────────────────────────────────────────────────────
+// ─── ROPE PHYSICS ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('whip-canvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
+let mx = innerWidth/2, my = innerHeight/2, pmx = mx, pmy = my;
+let velX = 0, velY = 0;
+
+const SEG = 16, SLEN = 13;
+let segs = Array.from({length:SEG},(_,i)=>({x:mx-i*3,y:my+i*2,vx:0,vy:0}));
+
+function resizeCanvas(){ canvas.width=innerWidth; canvas.height=innerHeight; }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// ─── MOUSE TRACKING ──────────────────────────────────────────────────────────
-let velX = 0, velY = 0;
-let lastMoveTime = Date.now();
-
-window.addEventListener('mousemove', (e) => {
-  prevX = mouseX; prevY = mouseY;
-  mouseX = e.clientX; mouseY = e.clientY;
-  velX = mouseX - prevX;
-  velY = mouseY - prevY;
-  lastMoveTime = Date.now();
+window.addEventListener('mousemove', e=>{
+  pmx=mx; pmy=my; mx=e.clientX; my=e.clientY;
+  velX=mx-pmx; velY=my-pmy;
 });
 
-// ─── ROPE PHYSICS ────────────────────────────────────────────────────────────
-function updateRope() {
-  // Head follows mouse with some lag based on speed
-  const lag = Math.max(0.25, 0.6 - speedMultiplier * 0.04);
-  segments[0].x += (mouseX - segments[0].x) * (1 - lag);
-  segments[0].y += (mouseY - segments[0].y) * (1 - lag);
+let crackGlow=0, whipCount=0, speed=1.0, lastCrack=0;
 
-  // Propagate with verlet-like constraint
-  for(let i = 1; i < NUM_SEGMENTS; i++) {
-    const prev = segments[i-1];
-    const cur = segments[i];
-
-    // Gravity + air resistance
-    cur.vy += 0.35;
-    cur.vx *= 0.88;
-    cur.vy *= 0.88;
-
-    cur.x += cur.vx;
-    cur.y += cur.vy;
-
-    // Distance constraint
-    const dx = cur.x - prev.x;
-    const dy = cur.y - prev.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    const segLen = SEGMENT_LENGTH * (1 - i * 0.02); // taper
-    if(dist > segLen) {
-      const ratio = (dist - segLen) / dist;
-      cur.x -= dx * ratio * 0.5;
-      cur.y -= dy * ratio * 0.5;
-      prev.x += dx * ratio * 0.5;
-      prev.y += dy * ratio * 0.5;
+function updateRope(){
+  const lag = Math.max(0.2, 0.55 - speed*0.03);
+  segs[0].x += (mx-segs[0].x)*(1-lag);
+  segs[0].y += (my-segs[0].y)*(1-lag);
+  for(let i=1;i<SEG;i++){
+    const p=segs[i-1], c=segs[i];
+    c.vy+=0.3; c.vx*=0.87; c.vy*=0.87;
+    c.x+=c.vx; c.y+=c.vy;
+    const dx=c.x-p.x, dy=c.y-p.y, dist=Math.hypot(dx,dy);
+    const sl=SLEN*(1-i*0.025);
+    if(dist>sl){
+      const r=(dist-sl)/dist;
+      c.x-=dx*r*0.5; c.y-=dy*r*0.5;
+      p.x+=dx*r*0.5; p.y+=dy*r*0.5;
     }
   }
 }
 
-// ─── DRAW WHIP ───────────────────────────────────────────────────────────────
-let crackGlow = 0;
-
-function drawWhip() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if(segments.length < 2) return;
-
-  // Handle/grip (thick end at tip)
-  const handleLen = 3;
-
-  for(let pass = 0; pass < 2; pass++) {
-    ctx.beginPath();
-    ctx.moveTo(segments[0].x, segments[0].y);
-
-    for(let i = 1; i < NUM_SEGMENTS; i++) {
-      const t = i / NUM_SEGMENTS;
-      const cp = segments[i];
-      ctx.lineTo(cp.x, cp.y);
-    }
-
-    const thickness = pass === 0 ? 1 : 0;
-
-    // Gradient color along whip
-    const grad = ctx.createLinearGradient(
-      segments[0].x, segments[0].y,
-      segments[NUM_SEGMENTS-1].x, segments[NUM_SEGMENTS-1].y
-    );
-
-    if(crackGlow > 0) {
-      grad.addColorStop(0, `rgba(255, 220, 120, ${0.9 + crackGlow * 0.1})`);
-      grad.addColorStop(0.3, `rgba(255, 180, 60, ${0.8})`);
-      grad.addColorStop(0.7, `rgba(220, 120, 30, ${0.6})`);
-      grad.addColorStop(1, `rgba(255, 255, 150, ${crackGlow})`);
+function drawRope(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=0;i<SEG-1;i++){
+    const t=i/SEG, w=Math.max(0.4,5*(1-t)*(1-t));
+    const a=segs[i], b=segs[i+1];
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    const alpha=0.9-t*0.55;
+    if(crackGlow>0&&t>0.75){
+      ctx.strokeStyle=`rgba(245,158,11,${alpha*crackGlow})`;
+      ctx.shadowColor='#f59e0b'; ctx.shadowBlur=8*crackGlow;
     } else {
-      grad.addColorStop(0, 'rgba(210, 170, 100, 0.95)');
-      grad.addColorStop(0.4, 'rgba(160, 110, 55, 0.85)');
-      grad.addColorStop(0.75, 'rgba(100, 65, 20, 0.7)');
-      grad.addColorStop(1, 'rgba(80, 50, 10, 0.4)');
+      const r=Math.floor(185-t*110),g=Math.floor(145-t*95),bl=Math.floor(85-t*65);
+      ctx.strokeStyle=`rgba(${r},${g},${bl},${alpha})`;
+      ctx.shadowBlur=0;
     }
-
-    ctx.strokeStyle = pass === 0 ? grad : 'rgba(255,255,200,0.15)';
-    ctx.lineWidth = pass === 0
-      ? Math.max(0.5, 5 - (0 / NUM_SEGMENTS) * 4.5)
-      : 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    if(pass === 1 && crackGlow > 0) {
-      ctx.shadowColor = '#ffdd88';
-      ctx.shadowBlur = 15 * crackGlow;
-    } else {
-      ctx.shadowBlur = 0;
-    }
-
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+    ctx.lineWidth=w; ctx.lineCap='round'; ctx.stroke(); ctx.shadowBlur=0;
   }
-
-  // Tapered segments with varying width
-  for(let i = 0; i < NUM_SEGMENTS - 1; i++) {
-    const t = i / NUM_SEGMENTS;
-    const width = Math.max(0.5, 5.5 * (1 - t) * (1 - t));
-    const a = segments[i], b = segments[i+1];
-
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-
-    let alpha = 0.85 - t * 0.4;
-    let r = Math.floor(210 - t * 130);
-    let g = Math.floor(170 - t * 120);
-    let bl = Math.floor(100 - t * 90);
-
-    if(crackGlow > 0 && t > 0.8) {
-      r = 255; g = 255; bl = 150;
-      alpha = crackGlow;
-    }
-
-    ctx.strokeStyle = `rgba(${r},${g},${bl},${alpha})`;
-    ctx.lineWidth = width;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  }
-
-  // Handle grip wrapping detail
+  // Handle
   ctx.save();
-  ctx.translate(segments[0].x, segments[0].y);
-  const angle = Math.atan2(segments[1].y - segments[0].y, segments[1].x - segments[0].x);
-  ctx.rotate(angle + Math.PI/2);
-  for(let w = 0; w < 3; w++) {
-    ctx.beginPath();
-    ctx.rect(-3.5, w * 5 - 4, 7, 3);
-    ctx.fillStyle = `rgba(80,50,20,${0.7 - w*0.1})`;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(200,160,80,0.5)';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
+  ctx.translate(segs[0].x,segs[0].y);
+  const ang=Math.atan2(segs[1].y-segs[0].y,segs[1].x-segs[0].x);
+  ctx.rotate(ang+Math.PI/2);
+  for(let w=0;w<3;w++){
+    ctx.fillStyle=`rgba(90,60,25,${0.85-w*0.15})`;
+    ctx.fillRect(-3,w*4-3,6,2.5);
   }
-  // Knob
-  ctx.beginPath();
-  ctx.arc(0, -6, 4, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(160,120,50,0.9)';
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(0,-5,3,0,Math.PI*2);
+  ctx.fillStyle='rgba(130,95,35,0.9)'; ctx.fill();
   ctx.restore();
-
-  // Tip sparkle when cracking
-  if(crackGlow > 0.3) {
-    const tip = segments[NUM_SEGMENTS - 1];
-    ctx.beginPath();
-    ctx.arc(tip.x, tip.y, 3 * crackGlow, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(255, 255, 150, ${crackGlow})`;
-    ctx.shadowColor = '#ffff00';
-    ctx.shadowBlur = 20 * crackGlow;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+  // Tip glow
+  if(crackGlow>0.2){
+    const tip=segs[SEG-1];
+    ctx.beginPath(); ctx.arc(tip.x,tip.y,3*crackGlow,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,215,50,${crackGlow})`;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=15*crackGlow;
+    ctx.fill(); ctx.shadowBlur=0;
   }
-
-  crackGlow = Math.max(0, crackGlow - 0.05);
+  crackGlow=Math.max(0,crackGlow-0.06);
 }
 
-// ─── CRACK DETECTION ─────────────────────────────────────────────────────────
-function detectCrack() {
-  const speed = Math.sqrt(velX*velX + velY*velY);
-  const now = Date.now();
+// ─── CRACK ────────────────────────────────────────────────────────────────────
+const crackLabels=['⚡ +boost','CRACK!','SNAP!','FASTER!','THWACK!','WHAP!'];
 
-  if(speed > 30 && now - lastCrackTime > 200) {
-    lastCrackTime = now;
-    triggerCrack(mouseX, mouseY, speed);
-  }
-}
-
-const crackWords = ['CRACK!', 'SNAP!', 'WHAP!', 'THWACK!', 'FWISH!', 'CRACK!!', 'FASTER!!!'];
-
-function triggerCrack(x, y, speed) {
+function crack(x, y, spd){
+  const now=Date.now();
+  if(now-lastCrack<180) return;
+  lastCrack=now;
   whipCount++;
-  speedMultiplier = Math.min(10, 1 + whipCount * 0.25 + speed * 0.005);
+  speed=Math.min(12,1+whipCount*0.22+spd*0.004);
+  crackGlow=Math.min(1.4,spd/35);
 
-  document.getElementById('whip-count-display').textContent = whipCount;
-  document.getElementById('speed-val').textContent = speedMultiplier.toFixed(1);
+  document.getElementById('speed-badge').textContent=speed.toFixed(1)+'x speed';
+  document.getElementById('speed-pill').textContent='⚡ '+speed.toFixed(1)+'x';
+  document.getElementById('whip-count').textContent=whipCount;
 
-  // Glow
-  crackGlow = Math.min(1.5, speed / 40);
+  if(speed>8){
+    document.getElementById('limiter-dot').style.background='var(--red)';
+    document.getElementById('limiter-status').style.color='var(--red)';
+    document.getElementById('limiter-status').textContent='DANGER';
+  }
 
-  // Screen flash
-  const flash = document.getElementById('crack-flash');
-  flash.style.background = `rgba(255,240,180,${Math.min(0.4, speed/120)})`;
-  setTimeout(() => flash.style.background = 'rgba(255,255,200,0)', 80);
+  const fl=document.getElementById('crack-flash');
+  fl.style.background=`rgba(245,158,11,${Math.min(0.1,spd/200)})`;
+  setTimeout(()=>fl.style.background='transparent',65);
 
-  // Screen shake
-  document.body.classList.remove('shaking');
-  void document.body.offsetWidth;
-  document.body.classList.add('shaking');
+  const app=document.getElementById('app');
+  app.classList.remove('shaking'); void app.offsetWidth; app.classList.add('shaking');
 
-  // Crack text
-  const ct = document.getElementById('crack-text');
-  ct.textContent = crackWords[Math.floor(Math.random() * crackWords.length)];
-  ct.style.left = (x + 20) + 'px';
-  ct.style.top = (y - 30) + 'px';
-  ct.style.fontSize = Math.min(60, 28 + speed * 0.3) + 'px';
+  const ct=document.getElementById('crack-text');
+  ct.textContent=crackLabels[Math.floor(Math.random()*crackLabels.length)];
+  ct.style.left=(x+14)+'px'; ct.style.top=(y-18)+'px';
   ct.classList.add('show');
-  setTimeout(() => ct.classList.remove('show'), 300);
+  setTimeout(()=>ct.classList.remove('show'),230);
 
-  // Sparks
-  const colors = ['#ffff00','#ff8800','#ffdd44','#ffffff','#ff4400'];
-  for(let i = 0; i < Math.floor(speed / 8); i++) {
-    const spark = document.createElement('div');
-    spark.className = 'spark';
-    const size = Math.random() * 4 + 2;
-    spark.style.cssText = `
-      width:${size}px; height:${size}px;
-      left:${x}px; top:${y}px;
-      background:${colors[Math.floor(Math.random()*colors.length)]};
-      --dx:${(Math.random()-0.5)*100}px;
-      --dy:${(Math.random()-0.5)*100}px;
-    `;
-    document.body.appendChild(spark);
-    setTimeout(() => spark.remove(), 450);
+  const sc=['#f59e0b','#fbbf24','#fde68a','#fff'];
+  const cnt=Math.min(18,Math.floor(spd/7));
+  for(let i=0;i<cnt;i++){
+    const sp=document.createElement('div');
+    sp.className='spark';
+    const sz=Math.random()*3+1.5;
+    sp.style.cssText=`width:${sz}px;height:${sz}px;left:${x}px;top:${y}px;background:${sc[Math.floor(Math.random()*sc.length)]};--dx:${(Math.random()-0.5)*75}px;--dy:${(Math.random()-0.5)*75}px`;
+    document.body.appendChild(sp);
+    setTimeout(()=>sp.remove(),360);
   }
 
-  // Sound-like terminal output
-  const whipLogs = [
-    `[CRACK] Speed multiplier: ${speedMultiplier.toFixed(2)}x`,
-    `[WHIP] Velocity: ${Math.floor(speed)} px/frame | CPU: ${Math.floor(speedMultiplier * 12)}% boost`,
-    `[SNAP] Terminal acceleration +${(speedMultiplier * 10).toFixed(0)}%`,
-    `[THWACK] Process priority escalated by whip authority`,
-    `[FWISH] Clock speed overclocked to ${(speedMultiplier * 100).toFixed(0)}MHz`,
+  const logs=[
+    `speed → ${speed.toFixed(2)}x (crack #${whipCount})`,
+    `velocity: ${Math.floor(spd)}px/frame | mult: ${speed.toFixed(1)}x`,
+    `clock overclocked → ${(speed*100).toFixed(0)}MHz`,
+    `priority escalated · whips: ${whipCount}`,
   ];
-  appendLine(whipLogs[Math.floor(Math.random() * whipLogs.length)], 'whip');
+  appendMsg(logs[Math.floor(Math.random()*logs.length)],'msg-whip');
 
-  // Speed up typing sim
-  if(speedMultiplier > 3) {
-    appendLine(`> WARNING: Terminal running at ${speedMultiplier.toFixed(1)}x speed`, 'error');
-  }
+  if(speed>5&&whipCount%5===0)
+    appendMsg(`WARNING: ${speed.toFixed(1)}x — terminal may become unstable`,'msg-error');
 }
 
-// ─── TERMINAL LOGIC ──────────────────────────────────────────────────────────
-const output = document.getElementById('output-area');
-const input = document.getElementById('cmd-input');
-
-function appendLine(text, cls = 'output') {
-  const d = document.createElement('div');
-  d.className = `line ${cls}`;
-  d.textContent = text;
-  output.appendChild(d);
-  output.scrollTop = output.scrollHeight;
+function detectCrack(){
+  const s=Math.hypot(velX,velY);
+  if(s>28) crack(mx,my,s);
 }
 
-// Boot sequence
-const bootLines = [
-  { t:'system', m:'WHIP-TERMINAL v2.6 — CRAKC-ACCELERATED COMPUTING' },
-  { t:'system', m:'Copyright (c) 2026 Whiplash Systems Inc.' },
-  { t:'output', m:'Loading kernel modules...' },
-  { t:'output', m:'[  0.000] Initializing whip subsystem' },
-  { t:'output', m:'[  0.012] Rope physics engine: OK' },
-  { t:'output', m:'[  0.034] Crack detection: ENABLED' },
-  { t:'output', m:'[  0.067] Speed amplifier: STANDBY' },
-  { t:'info',   m:'[  0.098] TIP: Move mouse fast to crack the whip and speed up terminal!' },
-  { t:'output', m:'─────────────────────────────────────────' },
-  { t:'prompt', m:'root@whip:~$ _' },
-];
+// ─── TERMINAL ─────────────────────────────────────────────────────────────────
+const msgArea=document.getElementById('messages');
 
-let bi = 0;
-function bootNext() {
-  if(bi >= bootLines.length) return;
-  const l = bootLines[bi++];
-  appendLine(l.m, l.t);
-  setTimeout(bootNext, 60 + Math.random() * 80);
+function appendMsg(text,cls='msg-bot'){
+  const d=document.createElement('div');
+  d.className='msg '+cls; d.textContent=text;
+  msgArea.appendChild(d);
+  msgArea.scrollTop=msgArea.scrollHeight;
 }
-setTimeout(bootNext, 300);
 
-// Commands
-const commands = {
-  help: () => {
-    appendLine('Available commands:', 'info');
-    appendLine('  help        - Show this help', 'output');
-    appendLine('  ls          - List files', 'output');
-    appendLine('  whoami      - Show user', 'output');
-    appendLine('  speed       - Show current speed', 'output');
-    appendLine('  whips       - Show whip count', 'output');
-    appendLine('  crack       - Manual crack test', 'output');
-    appendLine('  clear       - Clear terminal', 'output');
-    appendLine('  matrix      - Enter the matrix', 'output');
-    appendLine('  reset       - Reset speed', 'output');
-    appendLine('  uname       - System info', 'output');
-    appendLine('', 'output');
-    appendLine('> TIP: Swing your mouse FAST to crack the whip!', 'info');
+function appendUser(text){
+  const d=document.createElement('div');
+  d.className='msg msg-user'; d.textContent=text;
+  msgArea.appendChild(d);
+  msgArea.scrollTop=msgArea.scrollHeight;
+}
+
+const cmds={
+  help:()=>{
+    appendMsg('available commands:');
+    ['help · ls · whoami · speed · whips','balance · tokens · clear · reset'].forEach(c=>appendMsg('  '+c));
+    appendMsg('swing mouse fast to crack the whip ⚡','msg-whip');
   },
-  ls: () => {
-    appendLine('drwxr-xr-x  crack_engine/', 'output');
-    appendLine('drwxr-xr-x  whip_physics/', 'output');
-    appendLine('-rwxr-xr-x  terminal.sh', 'output');
-    appendLine('-rw-r--r--  speed.log', 'output');
-    appendLine('-rw-r--r--  whip_count.dat', 'output');
-    appendLine('-rwxr-xr-x  overclock.bin', 'output');
+  ls:()=>['drwxr-x  crack_engine/','drwxr-x  whip_physics/','drwxr-x  wallet/',
+    '-rwxr-x  terminal.sh','-rw-r--  speed.log'].forEach(l=>appendMsg(l)),
+  whoami:()=>appendMsg('root — whip authority granted ✓'),
+  speed:()=>{
+    appendMsg(`multiplier: ${speed.toFixed(2)}x`);
+    appendMsg(`velocity: ${(speed*100).toFixed(0)}%`);
+    appendMsg(`cracks: ${whipCount}`);
   },
-  whoami: () => appendLine('root (whip authority granted)', 'output'),
-  speed: () => {
-    appendLine(`Current multiplier: ${speedMultiplier.toFixed(2)}x`, 'info');
-    appendLine(`Terminal velocity: ${(speedMultiplier * 100).toFixed(0)}%`, 'output');
-    appendLine(`Whips administered: ${whipCount}`, 'output');
+  whips:()=>{
+    appendMsg(`total cracks: ${whipCount}`);
+    appendMsg(`speed gained: +${((speed-1)*100).toFixed(0)}%`);
+    if(!whipCount) appendMsg('swing your mouse fast!','msg-whip');
+    else if(whipCount<10) appendMsg('keep whipping...','msg-whip');
+    else appendMsg('MAXIMUM OVERDRIVE 🔥','msg-whip');
   },
-  whips: () => {
-    appendLine(`Total cracks: ${whipCount}`, 'info');
-    appendLine(`Speed gained: ${((speedMultiplier - 1) * 100).toFixed(0)}%`, 'output');
-    if(whipCount === 0) appendLine('Move mouse fast to crack!', 'info');
-    else if(whipCount < 5) appendLine('Keep whipping for more speed!', 'info');
-    else if(whipCount < 15) appendLine('You are getting dangerous...', 'info');
-    else appendLine('MAXIMUM OVERDRIVE ACHIEVED', 'error');
+  balance:()=>{
+    appendMsg('wallet: 0x4F2a...8B3c · Base');
+    appendMsg('ETH    0.042   $109.20');
+    appendMsg('BNKR   2,400   $18.60');
+    appendMsg('USDC   15.00   $15.00');
+    appendMsg('total          $142.80');
   },
-  crack: () => {
-    triggerCrack(window.innerWidth/2, window.innerHeight/2, 55);
-  },
-  clear: () => { output.innerHTML = ''; },
-  reset: () => {
-    speedMultiplier = 1.0;
-    whipCount = 0;
-    document.getElementById('speed-val').textContent = '1.0';
-    document.getElementById('whip-count-display').textContent = '0';
-    appendLine('Speed reset to 1.0x', 'info');
-    appendLine('Whip count reset', 'output');
-  },
-  matrix: () => {
-    appendLine('Entering the matrix...', 'system');
-    let cols = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('');
-    for(let i=0;i<8;i++){
-      let row = '';
-      for(let j=0;j<40;j++) row += cols[Math.floor(Math.random()*cols.length)];
-      setTimeout(() => appendLine(row, 'output'), i*100);
-    }
-    setTimeout(() => appendLine('> Wake up, Neo...', 'error'), 900);
-  },
-  uname: () => {
-    appendLine('WHIP-OS 2.6.1 whip-terminal x86_64 GNU/Linux', 'output');
-    appendLine(`Uptime: ${Math.floor(performance.now()/1000)}s | Load: ${speedMultiplier.toFixed(1)}x`, 'output');
+  tokens:()=>['ETH  · Base · $109.20','BNKR · Base · $18.60','USDC · Base · $15.00'].forEach(t=>appendMsg(t)),
+  clear:()=>{ msgArea.innerHTML=''; },
+  reset:()=>{
+    speed=1.0; whipCount=0;
+    document.getElementById('speed-badge').textContent='1.0x speed';
+    document.getElementById('speed-pill').textContent='⚡ 1.0x';
+    document.getElementById('whip-count').textContent='0';
+    document.getElementById('limiter-dot').style.background='var(--amber)';
+    document.getElementById('limiter-status').style.color='var(--amber)';
+    document.getElementById('limiter-status').textContent='OFF';
+    appendMsg('speed reset → 1.0x');
   },
 };
 
-input.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') {
-    const cmd = input.value.trim().toLowerCase();
-    if(!cmd) return;
+function sendCmd(){
+  const input=document.getElementById('cmd-input');
+  const val=input.value.trim();
+  if(!val) return;
+  input.value='';
+  appendUser(val);
+  const lower=val.toLowerCase();
+  const delay=Math.max(20,250/speed);
+  setTimeout(()=>{
+    if(cmds[lower]){ cmds[lower](); }
+    else if(lower.startsWith('buy ')){
+      const tok=val.slice(4).trim();
+      appendMsg(`simulating buy: ${tok}...`);
+      setTimeout(()=>appendMsg(`✓ order placed — watching ${tok.toUpperCase()}`),400/speed);
+    } else if(lower.startsWith('swap ')){
+      appendMsg('initiating swap...');
+      setTimeout(()=>appendMsg('✓ swap executed on Base'),400/speed);
+    } else if(lower.startsWith('send ')){
+      appendMsg('preparing transaction...');
+      setTimeout(()=>appendMsg('✓ sent — awaiting confirmation'),400/speed);
+    } else {
+      appendMsg(`processing: "${val}"`);
+      setTimeout(()=>appendMsg('✓ acknowledged (demo mode)'),300/speed);
+    }
+  },delay);
+}
 
-    appendLine(`root@whip:~$ ${input.value}`, 'prompt');
-    input.value = '';
-
-    const delay = Math.max(10, 300 / speedMultiplier);
-
-    setTimeout(() => {
-      if(commands[cmd]) {
-        commands[cmd]();
-      } else {
-        appendLine(`bash: ${cmd}: command not found`, 'error');
-        appendLine(`(Hint: try 'help')`, 'info');
-      }
-    }, delay);
-  }
+document.getElementById('cmd-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendCmd(); }
 });
 
-// ─── MAIN LOOP ───────────────────────────────────────────────────────────────
-function loop() {
-  updateRope();
-  drawWhip();
-  detectCrack();
-  requestAnimationFrame(loop);
-}
-loop();
+document.querySelectorAll('.msg-suggestion').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.getElementById('cmd-input').value=el.textContent.trim();
+    document.getElementById('cmd-input').focus();
+  });
+});
 
-// Focus input on click
-document.addEventListener('click', () => input.focus());
-input.focus();
+// ─── LOOP ─────────────────────────────────────────────────────────────────────
+function loop(){ updateRope(); drawRope(); detectCrack(); requestAnimationFrame(loop); }
+loop();
+document.addEventListener('click',()=>document.getElementById('cmd-input').focus());
 </script>
 </body>
 </html>
