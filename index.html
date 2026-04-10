@@ -3,157 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ball Evolution Simulator</title>
+    <title>Professional Ball Physics Simulator</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Mencegah scroll */
-            background-color: black;
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        #container {
-            position: relative;
-            text-align: center;
-        }
-
-        #topText, #bottomText {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-        }
-
-        #topText {
-            top: -50px; /* Jarak di atas lingkaran */
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        #bottomText {
-            bottom: -40px; /* Jarak di bawah lingkaran */
-            font-size: 18px;
-        }
-
-        canvas {
-            border-radius: 50%;
-            display: block;
-            /* Memberikan efek gradient pada border seperti video */
-            border: 10px solid;
-            border-image: linear-gradient(to right, #61ff9e, #8c61ff, #ff617a, #ffd461) 1;
-        }
+        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #canvas-container { position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        canvas { display: block; border-radius: 50%; border: 4px solid #333; }
+        .ui-overlay { position: absolute; top: -40px; width: 100%; text-align: center; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+        /* Style untuk GUI agar terlihat profesional */
+        .lil-gui { --width: 250px; --name-width: 40%; }
     </style>
 </head>
 <body>
 
-<div id="container">
-    <div id="topText">With every bounce, the ball evolves !...</div>
+<div id="canvas-container">
+    <div class="ui-overlay" id="statusText">Bounces: 0</div>
     <canvas id="simCanvas"></canvas>
-    <div id="bottomText">BALLSIMULATOR.COM</div>
 </div>
 
-<script>
+<script type="module">
+    import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('statusText');
 
-    // Menentukan ukuran canvas berdasarkan viewport (biar responsif)
-    const containerSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.7, 500); // Max 500px
-    canvas.width = containerSize;
-    canvas.height = containerSize;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const circleRadius = (containerSize / 2) - 15; // Jarak dari border
-
-    // Properti Bola
-    let ball = {
-        x: centerX,
-        y: centerY,
-        vx: 5, // Kecepatan X awal
-        vy: 3, // Kecepatan Y awal
-        radius: 10, // Ukuran awal
-        color: '#5cffca',
-        trails: [] // Array untuk menyimpan jejak
+    // KONFIGURASI YANG BISA DIKONTROL
+    const params = {
+        speed: 5,
+        gravity: 0.15,
+        friction: 0.999,
+        growthRate: 1.2,
+        trailOpacity: 0.1,
+        maxTrails: 150,
+        colorHue: 180,
+        enableSound: true,
+        reset: () => resetSim()
     };
 
-    const trailLength = 100; // Berapa banyak titik jejak yang disimpan
-    const evolutionScale = 0.8; // Seberapa cepat bola membesar per pantulan
-    const maxBallRadius = circleRadius * 0.8; // Ukuran maksimal bola (sebelum memenuhi lingkaran)
+    // Setup GUI
+    const gui = new GUI();
+    gui.add(params, 'speed', 1, 20).name('Kecepatan Awal');
+    gui.add(params, 'gravity', 0, 1).name('Gravitasi');
+    gui.add(params, 'growthRate', 0, 5).name('Pertumbuhan');
+    gui.add(params, 'trailOpacity', 0.01, 0.5).name('Kepekatan Jejak');
+    gui.add(params, 'colorHue', 0, 360).name('Warna (Hue)');
+    gui.add(params, 'enableSound').name('Efek Suara');
+    gui.add(params, 'reset').name('RESET SIMULASI');
 
-    function draw() {
-        // Membersihkan canvas (tapi tidak sepenuhnya untuk efek jejak)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Sedikit transparan untuk membuat jejak memudar
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Inisialisasi Ukuran
+    const size = Math.min(window.innerWidth * 0.8, 600);
+    canvas.width = size;
+    canvas.height = size;
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const boundaryRadius = (size / 2) - 10;
 
-        // Menggambar Jejak (Trails)
-        ball.trails.forEach((point, index) => {
-            ctx.beginPath();
-            // Semakin tua jejak, semakin transparan
-            ctx.fillStyle = `rgba(180, 220, 255, ${0.1 * (index / trailLength)})`;
-            ctx.arc(point.x, point.y, 2, 0, Math.PI * 2); // Titik jejak kecil
-            ctx.fill();
-            ctx.closePath();
-        });
+    let ball, bounces;
 
-        // Menggambar Lingkaran Pembatas (opsional, karena border canvas sudah berwarna)
-        // ctx.beginPath();
-        // ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
-        // ctx.strokeStyle = '#61ff9e'; // Mengikuti warna awal video
-        // ctx.lineWidth = 3;
-        // ctx.stroke();
-        // ctx.closePath();
+    function resetSim() {
+        bounces = 0;
+        ball = {
+            x: centerX,
+            y: centerY,
+            vx: params.speed,
+            vy: 0,
+            radius: 15,
+            trails: []
+        };
+    }
 
-        // Menggambar Bola
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = ball.color;
-        ctx.fill();
-        ctx.closePath();
+    // Fungsi Suara (Audio Context)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBounceSound(freq) {
+        if (!params.enableSound) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
     }
 
     function update() {
-        // Simpan posisi saat ini ke dalam jejak
-        ball.trails.push({x: ball.x, y: ball.y});
-        if (ball.trails.length > trailLength) {
-            ball.trails.shift(); // Hapus jejak tertua
-        }
+        // Gravitasi & Friksi
+        ball.vy += params.gravity;
+        ball.vx *= params.friction;
+        ball.vy *= params.friction;
 
-        // Pindahkan bola
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Cek tabrakan dengan batas lingkaran
-        let dx = ball.x - centerX;
-        let dy = ball.y - centerY;
-        let distance = Math.sqrt(dx*dx + dy*dy);
+        // Cek Tabrakan Lingkaran
+        const dx = ball.x - centerX;
+        const dy = ball.y - centerY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
 
-        if (distance + ball.radius >= circleRadius) {
-            // TERJADI PANTULAN
+        if (dist + ball.radius >= boundaryRadius) {
+            const nx = dx / dist;
+            const ny = dy / dist;
 
-            // 1. Hitung vektor normal pantulan (dari pusat lingkaran ke titik kontak)
-            let nx = dx / distance;
-            let ny = dy / distance;
+            // Pantulan fisik
+            const dot = ball.vx * nx + ball.vy * ny;
+            ball.vx = (ball.vx - 2 * dot * nx) * 1.05; // Sedikit boost kecepatan tiap pantul
+            ball.vy = (ball.vy - 2 * dot * ny) * 1.05;
 
-            // 2. Refleksikan vektor kecepatan bola berdasarkan normal
-            let dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx = ball.vx - 2 * dotProduct * nx;
-            ball.vy = ball.vy - 2 * dotProduct * ny;
-
-            // 3. Pastikan bola tidak 'terjebak' di luar lingkaran
-            let overlap = (distance + ball.radius) - circleRadius;
+            // Koreksi posisi
+            const overlap = (dist + ball.radius) - boundaryRadius;
             ball.x -= nx * overlap;
             ball.y -= ny * overlap;
 
-            // 4. EVOLUSI: Perbesar bola
-            if (ball.radius < maxBallRadius) {
-                ball.radius += evolutionScale;
-            }
+            // Evolusi
+            ball.radius += params.growthRate;
+            bounces++;
+            statusText.innerText = `Bounces: ${bounces}`;
+            
+            // Play Sound (Frekuensi naik tiap pantulan)
+            playBounceSound(200 + (bounces * 10));
         }
+
+        // Simpan Jejak
+        ball.trails.push({x: ball.x, y: ball.y, r: ball.radius});
+        if (ball.trails.length > params.maxTrails) ball.trails.shift();
+    }
+
+    function draw() {
+        // Background trail effect
+        ctx.fillStyle = `rgba(5, 5, 5, ${params.trailOpacity})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Gambar Jejak
+        ball.trails.forEach((t, i) => {
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${params.colorHue}, 80%, 50%, ${i / ball.trails.length * 0.2})`;
+            ctx.fill();
+        });
+
+        // Gambar Lingkaran Pembatas
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, boundaryRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsl(${params.colorHue}, 100%, 50%)`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Gambar Bola Utama
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${params.colorHue}, 100%, 60%)`;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = `hsl(${params.colorHue}, 100%, 50%)`;
+        ctx.fill();
+        ctx.shadowBlur = 0; // Reset shadow biar tidak berat
     }
 
     function loop() {
@@ -162,10 +166,8 @@
         requestAnimationFrame(loop);
     }
 
-    // Memulai loop simulasi
+    resetSim();
     loop();
-
 </script>
-
 </body>
 </html>
