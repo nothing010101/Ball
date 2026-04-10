@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clanker.world Whipping Simulator</title>
+    <title>Clanker Simulator</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -20,8 +20,13 @@
         </div>
 
         <div class="controls">
-            <button id="whip-button" class="whip-btn">💥 PECUUT! (FASTER)</button>
-            <p class="instruction">Ketuk tombol di atas untuk "mencambuk" bot agar bekerja lebih cepat.</p>
+            <div class="whip-container" id="whip-action">
+                <svg class="whip-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path class="whip-handle" d="M15,85 L30,60" stroke="#8B4513" stroke-width="8" stroke-linecap="round"/>
+                    <path class="whip-lash" d="M30,60 Q50,20 80,40 T95,15" fill="transparent" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <p class="instruction">Crack the whip to accelerate rendering.</p>
         </div>
     </div>
 
