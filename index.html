@@ -3,28 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WHIP TERMINAL</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>WhipTerm — AI Crypto Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; cursor: none !important; }
 
 :root {
-  --bg: #0f0f0f;
-  --bg2: #141414;
-  --bg3: #1a1a1a;
-  --border: #2a2a2a;
-  --border2: #333;
-  --text: #e8e8e8;
-  --text2: #888;
-  --text3: #555;
-  --green: #4ade80;
-  --green-dim: #1a3a2a;
-  --green-muted: #2d6e4a;
-  --amber: #f59e0b;
-  --red: #ef4444;
-  --blue: #3b82f6;
-  --purple: #8b5cf6;
-  --mono: 'JetBrains Mono', monospace;
+  --bg:       #f5f3ef;
+  --bg2:      #faf9f7;
+  --bg3:      #edeae4;
+  --bg4:      #e4e0d8;
+  --border:   #dbd7cf;
+  --border2:  #ccc8bf;
+  --text:     #1a1916;
+  --text2:    #6b6760;
+  --text3:    #a09b93;
+  --accent:   #c17f3e;
+  --accent2:  #a86828;
+  --accent-bg:#fdf3e7;
+  --accent-bd:#e8c896;
+  --green:    #2d7a4f;
+  --green-bg: #edf7f1;
+  --green-bd: #9ed4b4;
+  --red:      #c0392b;
+  --red-bg:   #fdf0ee;
+  --blue:     #2563eb;
+  --blue-bg:  #eff4ff;
+  --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow2:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --mono: 'Geist Mono', monospace;
+  --sans: 'Geist', sans-serif;
 }
 
 html, body {
@@ -32,117 +40,277 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 13px;
+  -webkit-font-smoothing: antialiased;
 }
 
 #app { display: flex; flex-direction: column; height: 100vh; }
 
+/* ── TOPBAR ── */
 #topbar {
-  height: 44px;
+  height: 52px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 20px;
   gap: 12px;
   flex-shrink: 0;
+  box-shadow: var(--shadow);
 }
 
-.topbar-logo {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--green);
-  letter-spacing: -0.5px;
+.logo {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.topbar-logo span { color: var(--text2); font-weight: 300; font-size: 12px; }
+.logo-icon {
+  width: 28px; height: 28px;
+  background: var(--text);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.logo-text {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text3);
+  margin-left: 2px;
+}
+
 .topbar-sep { flex: 1; }
 
-.topbar-badge {
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid var(--green-muted);
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 11px;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
   font-weight: 500;
+  font-family: var(--mono);
 }
 
-.topbar-addr {
-  color: var(--text2);
-  font-size: 11px;
+.chip-speed {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bd);
+  color: var(--accent2);
+}
+
+.chip-speed .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+.chip-addr {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 4px 10px;
+  color: var(--text2);
 }
 
+.chip-addr .dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+
+.topbar-divider { width: 1px; height: 20px; background: var(--border); }
+
+/* ── MAIN ── */
 #main { display: flex; flex: 1; overflow: hidden; }
 
-/* CHAT */
+/* ── CHAT ── */
 #chat-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
+  background: var(--bg2);
   min-width: 0;
 }
 
 #messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
 }
 
 #messages::-webkit-scrollbar { width: 4px; }
-#messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+#messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
-.msg { line-height: 1.65; font-size: 13px; }
-.msg-bot { color: var(--text); }
-
-.msg-user {
-  color: var(--text2);
+/* Greeting */
+.greeting-row {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
-.msg-user::before {
-  content: '>';
-  color: var(--green);
-  font-weight: 600;
+.bot-avatar {
+  width: 30px; height: 30px;
+  background: var(--text);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.greeting-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.5;
+  padding-top: 5px;
+}
+
+/* Suggestions */
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 4px 0 8px 0;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  margin-bottom: 3px;
+  transition: background 0.12s, border-color 0.12s;
+  font-size: 13px;
+  color: var(--text2);
+  font-family: var(--mono);
+}
+
+.suggestion-item:hover {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.suggestion-arrow {
+  color: var(--text3);
+  font-size: 11px;
   flex-shrink: 0;
 }
 
-.msg-suggestion {
-  color: var(--text2);
+/* Chat messages */
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 1px 0;
+}
+
+.msg-user-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 6px 0 2px;
+}
+
+.msg-user-bubble {
+  background: var(--text);
+  color: #fff;
+  border-radius: 12px 12px 2px 12px;
+  padding: 8px 13px;
+  font-size: 13px;
+  max-width: 72%;
+  line-height: 1.5;
+  font-family: var(--mono);
+}
+
+.msg-bot-row {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 1px 0;
-  transition: color 0.1s;
+  margin: 2px 0;
 }
 
-.msg-suggestion::before { content: '>'; color: var(--text3); flex-shrink: 0; }
-.msg-suggestion:hover { color: var(--text); }
+.msg-bot-small {
+  width: 20px; height: 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 
-.msg-whip { color: var(--amber); font-size: 12px; }
-.msg-error { color: var(--red); font-size: 12px; }
-.msg-system { color: var(--text3); font-size: 11px; margin-bottom: 6px; }
+.msg-bot-bubble {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 2px 12px 12px 12px;
+  padding: 8px 13px;
+  font-size: 13px;
+  color: var(--text);
+  max-width: 80%;
+  line-height: 1.55;
+  font-family: var(--mono);
+}
 
-/* INPUT */
+.msg-whip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.whip-tag {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bd);
+  color: var(--accent2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.whip-text {
+  font-size: 12px;
+  color: var(--accent2);
+  font-family: var(--mono);
+}
+
+.msg-error-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--red-bg);
+  border: 1px solid #f0b0aa;
+  border-radius: 8px;
+  margin: 3px 0;
+}
+
+.error-icon { color: var(--red); font-size: 12px; }
+.error-text { font-size: 12px; color: var(--red); font-family: var(--mono); }
+
+.divider { height:1px; background:var(--border); margin: 8px 0; }
+
+/* ── INPUT ── */
 #input-area {
   border-top: 1px solid var(--border);
-  padding: 12px 16px;
+  padding: 14px 20px;
   background: var(--bg2);
   flex-shrink: 0;
 }
@@ -151,276 +319,382 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.model-badge {
-  display: flex;
+.meta-chip {
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 3px 8px;
+  border-radius: 5px;
+  padding: 3px 9px;
   font-size: 11px;
+  font-family: var(--mono);
   color: var(--text2);
 }
 
-.model-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); }
+.meta-chip .mdot { width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0; }
 
-.speed-badge {
-  background: var(--green-dim);
-  border: 1px solid var(--green-muted);
-  border-radius: 4px;
-  padding: 3px 8px;
+.meta-speed {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bd);
+  color: var(--accent2);
+}
+
+.meta-flex { flex: 1; }
+
+.crack-count {
   font-size: 11px;
-  color: var(--green);
+  color: var(--text3);
+  font-family: var(--mono);
 }
 
-.flex-sep { flex: 1; }
-.whip-counter { font-size: 11px; color: var(--amber); }
+.crack-count b { color: var(--accent2); font-weight: 600; }
 
-#input-box {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: 6px;
-  padding: 10px 44px 10px 12px;
-  position: relative;
-  transition: border-color 0.15s;
+#input-wrap {
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-#input-box:focus-within {
-  border-color: var(--green-muted);
-  box-shadow: 0 0 0 2px rgba(74,222,128,0.06);
+#input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(193,127,62,0.12);
 }
 
 #cmd-input {
-  width: 100%;
+  flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  color: var(--green);
+  color: var(--text);
   font-family: var(--mono);
   font-size: 13px;
-  caret-color: var(--green);
+  caret-color: var(--accent);
+  padding: 11px 0;
 }
+
+#cmd-input::placeholder { color: var(--text3); }
 
 #send-btn {
-  position: absolute;
-  right: 8px; bottom: 7px;
-  width: 28px; height: 28px;
-  background: var(--green);
-  border: none; border-radius: 4px;
+  width: 30px; height: 30px;
+  background: var(--text);
+  border: none; border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
 }
 
-#send-btn:hover { background: #22c55e; }
-#send-btn svg { width: 14px; height: 14px; fill: #000; }
+#send-btn:hover { background: #333; transform: scale(1.05); }
+#send-btn:active { transform: scale(0.95); }
+#send-btn svg { width: 13px; height: 13px; fill: #fff; }
 
-/* SIDEBAR */
+/* ── SIDEBAR ── */
 #sidebar {
-  width: 260px;
+  width: 268px;
   flex-shrink: 0;
   background: var(--bg2);
+  border-left: 1px solid var(--border);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
 }
 
 #sidebar::-webkit-scrollbar { width: 4px; }
-#sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
-.sidebar-section { border-bottom: 1px solid var(--border); }
+.sb-section {
+  border-bottom: 1px solid var(--border);
+}
 
-.sidebar-header {
-  padding: 12px 16px;
+.sb-header {
+  padding: 13px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background 0.1s;
 }
 
-.sidebar-header:hover { background: var(--bg3); }
+.sb-header:hover { background: var(--bg3); }
 
-.sidebar-title {
+.sb-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 9px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text);
 }
 
-.sidebar-arrow { color: var(--text3); font-size: 10px; }
-
-.sidebar-content { padding: 0 16px 12px; }
-
-.wallet-balance {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text);
-  padding: 8px 0 4px;
-  letter-spacing: -0.5px;
-}
-
-.wallet-addr { color: var(--text3); font-size: 11px; margin-bottom: 10px; }
-
-.wallet-actions { display: flex; gap: 8px; }
-
-.w-btn {
-  flex: 1;
+.sb-icon {
+  width: 22px; height: 22px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px;
-  text-align: center;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
   font-size: 11px;
   color: var(--text2);
-  font-family: var(--mono);
-  transition: border-color 0.15s, color 0.15s;
 }
 
-.w-btn:hover { border-color: var(--border2); color: var(--text); }
+.sb-chevron {
+  color: var(--text3);
+  font-size: 10px;
+  transition: transform 0.15s;
+}
 
-.token-item {
+.sb-content { padding: 4px 16px 14px; }
+
+/* Wallet */
+.wallet-total {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -1px;
+  padding: 6px 0 3px;
+  font-family: var(--sans);
+}
+
+.wallet-sub {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--mono);
+  margin-bottom: 12px;
+}
+
+.wallet-actions { display: flex; gap: 8px; margin-bottom: 2px; }
+
+.wa-btn {
+  flex: 1;
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 7px;
+  padding: 7px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  font-family: var(--sans);
+  transition: all 0.12s;
+}
+
+.wa-btn:hover {
+  border-color: var(--text3);
+  color: var(--text);
+  background: var(--bg3);
+}
+
+/* Tokens */
+.token-row {
   display: flex;
   align-items: center;
-  padding: 7px 0;
   gap: 10px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
 
-.token-item:last-child { border-bottom: none; }
+.token-row:last-child { border-bottom: none; }
 
-.token-icon {
-  width: 28px; height: 28px;
+.tk-icon {
+  width: 32px; height: 32px;
   border-radius: 50%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center; justify-content: center;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: var(--mono);
   flex-shrink: 0;
 }
 
-.token-info { flex: 1; min-width: 0; }
-.token-name { font-size: 12px; font-weight: 500; color: var(--text); }
-.token-chain { font-size: 10px; color: var(--text3); }
-.token-val { text-align: right; }
-.token-amount { font-size: 12px; font-weight: 500; color: var(--text); }
-.token-usd { font-size: 10px; color: var(--text3); }
+.tk-info { flex: 1; min-width: 0; }
+.tk-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.tk-chain { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 1px; }
+.tk-right { text-align: right; }
+.tk-amount { font-size: 12px; font-weight: 600; color: var(--text); font-family: var(--mono); }
+.tk-usd { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 1px; }
 
-.security-row {
-  display: flex; align-items: center; gap: 8px; padding: 5px 0;
+/* Security */
+.sec-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
 }
 
-.sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.slabel { font-size: 11px; color: var(--text2); }
-.sstatus { margin-left: auto; font-size: 10px; }
+.sec-row:last-child { border-bottom: none; }
 
-/* WHIP CANVAS */
+.sec-indicator {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sec-label { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+.sec-status { margin-left: auto; font-size: 10px; font-family: var(--mono); font-weight: 600; }
+
+/* Speed meter */
+.speed-meter {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bd);
+  border-radius: 8px;
+}
+
+.sm-label { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sm-val { font-size: 22px; font-weight: 700; color: var(--accent2); font-family: var(--mono); letter-spacing: -0.5px; }
+.sm-sub { font-size: 10px; color: var(--accent); margin-top: 1px; font-family: var(--mono); }
+
+.speed-bar-wrap { margin-top: 8px; background: var(--accent-bd); border-radius: 4px; height: 4px; overflow: hidden; }
+.speed-bar { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 4px; transition: width 0.3s; width: 8%; }
+
+/* ── CANVAS + EFFECTS ── */
 #whip-canvas {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  pointer-events: none;
-  z-index: 9999;
+  position: fixed; top:0; left:0;
+  width:100vw; height:100vh;
+  pointer-events: none; z-index: 9999;
 }
 
 #crack-flash {
-  position: fixed; inset: 0;
+  position: fixed; inset:0;
   background: transparent;
-  pointer-events: none;
-  z-index: 9997;
-  transition: background 0.05s;
+  pointer-events: none; z-index: 9997;
+  transition: background 0.06s;
 }
 
-#crack-text {
+#crack-label {
   position: fixed;
-  pointer-events: none;
-  z-index: 9998;
+  pointer-events: none; z-index: 9998;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--amber);
+  color: var(--accent2);
   opacity: 0;
   transform: translateY(0);
-  transition: opacity 0.2s, transform 0.2s;
-  background: rgba(20,12,0,0.9);
-  border: 1px solid rgba(245,158,11,0.5);
-  border-radius: 4px;
+  transition: opacity 0.18s, transform 0.18s;
+  background: var(--bg2);
+  border: 1px solid var(--accent-bd);
+  border-radius: 5px;
   padding: 3px 8px;
+  box-shadow: var(--shadow2);
   white-space: nowrap;
 }
 
-#crack-text.show { opacity: 1; transform: translateY(-8px); }
+#crack-label.show { opacity: 1; transform: translateY(-10px); }
 
 .spark {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9996;
+  position: fixed; pointer-events: none; z-index: 9996;
   border-radius: 50%;
-  animation: spark-fly 0.35s ease-out forwards;
+  animation: sfx 0.35s ease-out forwards;
 }
 
-@keyframes spark-fly {
-  0% { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--dx),var(--dy)) scale(0); opacity: 0; }
+@keyframes sfx {
+  0%   { transform: translate(0,0) scale(1); opacity:1; }
+  100% { transform: translate(var(--dx),var(--dy)) scale(0); opacity:0; }
 }
 
 @keyframes shake {
-  0%,100% { transform: translate(0,0); }
-  25% { transform: translate(-2px,1px); }
-  75% { transform: translate(2px,-1px); }
+  0%,100% { transform: translate(0,0) rotate(0deg); }
+  20%     { transform: translate(-1.5px,1px) rotate(-0.3deg); }
+  60%     { transform: translate(1.5px,-0.5px) rotate(0.2deg); }
 }
 
-.shaking { animation: shake 0.1s ease-in-out; }
+.shaking { animation: shake 0.12s ease-in-out; }
 </style>
 </head>
 <body>
 
 <canvas id="whip-canvas"></canvas>
 <div id="crack-flash"></div>
-<div id="crack-text">+0.5x</div>
+<div id="crack-label">⚡ +0.5x speed</div>
 
 <div id="app">
+  <!-- TOPBAR -->
   <div id="topbar">
-    <div class="topbar-logo">
-      🤖 whipterm <span>/ terminal</span>
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <div class="logo-text">WhipTerm <span class="logo-sub">/ terminal</span></div>
     </div>
     <div class="topbar-sep"></div>
-    <div class="topbar-badge" id="speed-badge">1.0x speed</div>
-    <div class="topbar-addr">0x4F2a...8B3c</div>
+    <div class="chip chip-speed">
+      <div class="dot"></div>
+      <span id="speed-chip-val">1.0x speed</span>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="chip chip-addr">
+      <div class="dot"></div>
+      0x4F2a...8B3c
+    </div>
   </div>
 
+  <!-- MAIN -->
   <div id="main">
+    <!-- CHAT PANEL -->
     <div id="chat-panel">
       <div id="messages">
-        <div class="msg msg-system">whip-terminal v2.6 — connected to Base · swing mouse fast to crack ⚡</div>
-        <div class="msg msg-bot">gm, how can I help you?</div>
-        <div class="msg msg-suggestion">Buy me $20 of $BNKR and sell when it pumps 10%</div>
-        <div class="msg msg-suggestion">Buy me $20 of $BNKR if price dips 10%</div>
-        <div class="msg msg-suggestion">Bridge $5 of ETH on Base to Solana</div>
-        <div class="msg msg-suggestion">Give me analysis of $BNKR over the last week</div>
-        <div class="msg msg-suggestion">Swap $5 of $BNKR on Base to SOL Solana</div>
-        <div class="msg msg-suggestion">Send $5 to @0xDeployer on X</div>
-        <div class="msg msg-suggestion">Sell all coins where balance is less than $5</div>
-        <div class="msg msg-suggestion">Deploy a coin on Base</div>
+        <!-- Greeting -->
+        <div class="greeting-row">
+          <div class="bot-avatar">🤖</div>
+          <div class="greeting-text">gm, how can I help you?</div>
+        </div>
+
+        <div class="section-label">Try asking</div>
+
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Buy me $20 of $BNKR and sell when it pumps 10%
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Buy me $20 of $BNKR if price dips 10%
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Bridge $5 of ETH on Base to Solana
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Give me an analysis of $BNKR over the last week
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Swap $5 of $BNKR on Base to SOL Solana
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Send $5 to @0xDeployer on X
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Sell all coins where balance is less than $5
+        </div>
+        <div class="suggestion-item" onclick="fillInput(this)">
+          <span class="suggestion-arrow">›</span>
+          Deploy a coin on Base
+        </div>
       </div>
 
+      <!-- INPUT -->
       <div id="input-area">
         <div id="input-meta">
-          <div class="model-badge">
-            <div class="model-dot"></div>
+          <div class="meta-chip">
+            <div class="mdot"></div>
             whip-ai-flash
           </div>
-          <div class="speed-badge" id="speed-pill">⚡ 1.0x</div>
-          <div class="flex-sep"></div>
-          <div class="whip-counter">🔥 <span id="whip-count">0</span> cracks</div>
+          <div class="meta-chip meta-speed" id="speed-pill">⚡ 1.0x</div>
+          <div class="meta-flex"></div>
+          <div class="crack-count">🔥 <b id="whip-count">0</b> cracks</div>
         </div>
-        <div id="input-box">
-          <input id="cmd-input" type="text" placeholder="Type a command or swing mouse fast to crack..." autocomplete="off" spellcheck="false" autofocus />
+        <div id="input-wrap">
+          <input id="cmd-input" type="text"
+            placeholder="Type a command, or swing fast to crack the whip..."
+            autocomplete="off" spellcheck="false" autofocus />
           <button id="send-btn" onclick="sendCmd()">
             <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
           </button>
@@ -428,99 +702,134 @@ html, body {
       </div>
     </div>
 
+    <!-- SIDEBAR -->
     <div id="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <div class="sidebar-title"><span>◫</span> Wallet</div>
-          <div class="sidebar-arrow">▶</div>
+      <!-- Wallet -->
+      <div class="sb-section">
+        <div class="sb-header">
+          <div class="sb-title">
+            <div class="sb-icon">◫</div>
+            Wallet
+          </div>
+          <div class="sb-chevron">▶</div>
         </div>
-        <div class="sidebar-content">
-          <div class="wallet-balance">$142.80</div>
-          <div class="wallet-addr">0x4F2a...8B3c · Base</div>
+        <div class="sb-content">
+          <div class="wallet-total">$142.80</div>
+          <div class="wallet-sub">0x4F2a...8B3c · Base Network</div>
           <div class="wallet-actions">
-            <div class="w-btn">Swap</div>
-            <div class="w-btn">Send</div>
+            <div class="wa-btn">↔ Swap</div>
+            <div class="wa-btn">↑ Send</div>
           </div>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <div class="sidebar-title"><span>⚡</span> Your Tokens</div>
-          <div class="sidebar-arrow">▶</div>
-        </div>
-        <div class="sidebar-content">
-          <div class="token-item">
-            <div class="token-icon" style="color:#4ade80;border-color:#1a3a2a">ETH</div>
-            <div class="token-info">
-              <div class="token-name">Ethereum</div>
-              <div class="token-chain">Base</div>
-            </div>
-            <div class="token-val">
-              <div class="token-amount">0.042</div>
-              <div class="token-usd">$109.20</div>
-            </div>
-          </div>
-          <div class="token-item">
-            <div class="token-icon" style="color:#f59e0b;border-color:#3a2a0a">BNKR</div>
-            <div class="token-info">
-              <div class="token-name">$BNKR</div>
-              <div class="token-chain">Base</div>
-            </div>
-            <div class="token-val">
-              <div class="token-amount">2,400</div>
-              <div class="token-usd">$18.60</div>
-            </div>
-          </div>
-          <div class="token-item">
-            <div class="token-icon" style="color:#3b82f6;border-color:#0a1a3a">USDC</div>
-            <div class="token-info">
-              <div class="token-name">USD Coin</div>
-              <div class="token-chain">Base</div>
-            </div>
-            <div class="token-val">
-              <div class="token-amount">15.00</div>
-              <div class="token-usd">$15.00</div>
+      <!-- Speed Meter -->
+      <div class="sb-section">
+        <div class="sb-content" style="padding-top:14px">
+          <div class="speed-meter">
+            <div class="sm-label">Whip Speed Multiplier</div>
+            <div class="sm-val" id="sm-val">1.0<span style="font-size:14px">x</span></div>
+            <div class="sm-sub" id="sm-sub">No cracks yet — swing your mouse!</div>
+            <div class="speed-bar-wrap">
+              <div class="speed-bar" id="speed-bar"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <div class="sidebar-title"><span>◈</span> Whip Security</div>
-          <div class="sidebar-arrow">▶</div>
+      <!-- Tokens -->
+      <div class="sb-section">
+        <div class="sb-header">
+          <div class="sb-title">
+            <div class="sb-icon">◈</div>
+            Your Tokens
+          </div>
+          <div class="sb-chevron">▶</div>
         </div>
-        <div class="sidebar-content">
-          <div class="security-row">
-            <div class="sdot" style="background:var(--green)"></div>
-            <div class="slabel">Crack detection</div>
-            <div class="sstatus" style="color:var(--green)">ACTIVE</div>
+        <div class="sb-content">
+          <div class="token-row">
+            <div class="tk-icon" style="color:#2d7a4f;border-color:#9ed4b4">ETH</div>
+            <div class="tk-info">
+              <div class="tk-name">Ethereum</div>
+              <div class="tk-chain">Base Network</div>
+            </div>
+            <div class="tk-right">
+              <div class="tk-amount">0.042</div>
+              <div class="tk-usd">$109.20</div>
+            </div>
           </div>
-          <div class="security-row">
-            <div class="sdot" style="background:var(--green)"></div>
-            <div class="slabel">Rope physics</div>
-            <div class="sstatus" style="color:var(--green)">OK</div>
+          <div class="token-row">
+            <div class="tk-icon" style="color:#c17f3e;border-color:#e8c896">BNKR</div>
+            <div class="tk-info">
+              <div class="tk-name">$BNKR</div>
+              <div class="tk-chain">Base Network</div>
+            </div>
+            <div class="tk-right">
+              <div class="tk-amount">2,400</div>
+              <div class="tk-usd">$18.60</div>
+            </div>
           </div>
-          <div class="security-row">
-            <div class="sdot" style="background:var(--amber)" id="limiter-dot"></div>
-            <div class="slabel">Speed limiter</div>
-            <div class="sstatus" style="color:var(--amber)" id="limiter-status">OFF</div>
+          <div class="token-row">
+            <div class="tk-icon" style="color:#2563eb;border-color:#93c5fd">USDC</div>
+            <div class="tk-info">
+              <div class="tk-name">USD Coin</div>
+              <div class="tk-chain">Base Network</div>
+            </div>
+            <div class="tk-right">
+              <div class="tk-amount">15.00</div>
+              <div class="tk-usd">$15.00</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <div class="sidebar-title"><span>◻</span> NFTs</div>
-          <div class="sidebar-arrow">▶</div>
+      <!-- Security -->
+      <div class="sb-section">
+        <div class="sb-header">
+          <div class="sb-title">
+            <div class="sb-icon">◉</div>
+            Whip Security
+          </div>
+          <div class="sb-chevron">▶</div>
+        </div>
+        <div class="sb-content">
+          <div class="sec-row">
+            <div class="sec-indicator" style="background:#2d7a4f"></div>
+            <div class="sec-label">Crack detection</div>
+            <div class="sec-status" style="color:#2d7a4f">ACTIVE</div>
+          </div>
+          <div class="sec-row">
+            <div class="sec-indicator" style="background:#2d7a4f"></div>
+            <div class="sec-label">Rope physics</div>
+            <div class="sec-status" style="color:#2d7a4f">ONLINE</div>
+          </div>
+          <div class="sec-row">
+            <div class="sec-indicator" id="lim-dot" style="background:#c17f3e"></div>
+            <div class="sec-label">Speed limiter</div>
+            <div class="sec-status" id="lim-status" style="color:#c17f3e">BYPASS</div>
+          </div>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <div class="sidebar-title"><span>○</span> Token Deployments (Legacy)</div>
-          <div class="sidebar-arrow">▶</div>
+      <!-- NFTs -->
+      <div class="sb-section">
+        <div class="sb-header">
+          <div class="sb-title">
+            <div class="sb-icon">◻</div>
+            NFTs
+          </div>
+          <div class="sb-chevron">▶</div>
+        </div>
+      </div>
+
+      <!-- Deployments -->
+      <div class="sb-section">
+        <div class="sb-header">
+          <div class="sb-title">
+            <div class="sb-icon">○</div>
+            Token Deployments
+          </div>
+          <div class="sb-chevron">▶</div>
         </div>
       </div>
     </div>
@@ -531,18 +840,14 @@ html, body {
 // ─── ROPE PHYSICS ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('whip-canvas');
 const ctx = canvas.getContext('2d');
-
-let mx = innerWidth/2, my = innerHeight/2, pmx = mx, pmy = my;
-let velX = 0, velY = 0;
-
-const SEG = 16, SLEN = 13;
+let mx=innerWidth/2, my=innerHeight/2, pmx=mx, pmy=my, velX=0, velY=0;
+const SEG=17, SLEN=12;
 let segs = Array.from({length:SEG},(_,i)=>({x:mx-i*3,y:my+i*2,vx:0,vy:0}));
 
 function resizeCanvas(){ canvas.width=innerWidth; canvas.height=innerHeight; }
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); window.addEventListener('resize',resizeCanvas);
 
-window.addEventListener('mousemove', e=>{
+window.addEventListener('mousemove',e=>{
   pmx=mx; pmy=my; mx=e.clientX; my=e.clientY;
   velX=mx-pmx; velY=my-pmy;
 });
@@ -550,15 +855,15 @@ window.addEventListener('mousemove', e=>{
 let crackGlow=0, whipCount=0, speed=1.0, lastCrack=0;
 
 function updateRope(){
-  const lag = Math.max(0.2, 0.55 - speed*0.03);
-  segs[0].x += (mx-segs[0].x)*(1-lag);
-  segs[0].y += (my-segs[0].y)*(1-lag);
+  const lag=Math.max(0.18,0.52-speed*0.025);
+  segs[0].x+=(mx-segs[0].x)*(1-lag);
+  segs[0].y+=(my-segs[0].y)*(1-lag);
   for(let i=1;i<SEG;i++){
-    const p=segs[i-1], c=segs[i];
-    c.vy+=0.3; c.vx*=0.87; c.vy*=0.87;
+    const p=segs[i-1],c=segs[i];
+    c.vy+=0.28; c.vx*=0.86; c.vy*=0.86;
     c.x+=c.vx; c.y+=c.vy;
-    const dx=c.x-p.x, dy=c.y-p.y, dist=Math.hypot(dx,dy);
-    const sl=SLEN*(1-i*0.025);
+    const dx=c.x-p.x,dy=c.y-p.y,dist=Math.hypot(dx,dy);
+    const sl=SLEN*(1-i*0.022);
     if(dist>sl){
       const r=(dist-sl)/dist;
       c.x-=dx*r*0.5; c.y-=dy*r*0.5;
@@ -569,188 +874,260 @@ function updateRope(){
 
 function drawRope(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Shadow pass
+  ctx.save();
+  ctx.globalAlpha=0.08;
   for(let i=0;i<SEG-1;i++){
-    const t=i/SEG, w=Math.max(0.4,5*(1-t)*(1-t));
-    const a=segs[i], b=segs[i+1];
+    const t=i/SEG,w=Math.max(0.3,5.5*(1-t)*(1-t));
+    const a=segs[i],b=segs[i+1];
+    ctx.beginPath(); ctx.moveTo(a.x+2,a.y+3); ctx.lineTo(b.x+2,b.y+3);
+    ctx.strokeStyle='#000'; ctx.lineWidth=w+1; ctx.lineCap='round'; ctx.stroke();
+  }
+  ctx.restore();
+
+  // Main rope
+  for(let i=0;i<SEG-1;i++){
+    const t=i/SEG,w=Math.max(0.4,5.5*(1-t)*(1-t));
+    const a=segs[i],b=segs[i+1];
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-    const alpha=0.9-t*0.55;
-    if(crackGlow>0&&t>0.75){
-      ctx.strokeStyle=`rgba(245,158,11,${alpha*crackGlow})`;
-      ctx.shadowColor='#f59e0b'; ctx.shadowBlur=8*crackGlow;
+    const alpha=0.92-t*0.45;
+    if(crackGlow>0&&t>0.72){
+      ctx.strokeStyle=`rgba(193,127,62,${alpha*crackGlow})`;
+      ctx.shadowColor='rgba(193,127,62,0.6)'; ctx.shadowBlur=10*crackGlow;
     } else {
-      const r=Math.floor(185-t*110),g=Math.floor(145-t*95),bl=Math.floor(85-t*65);
+      // Realistic leather gradient: tan → dark brown
+      const r=Math.floor(185-t*100),g=Math.floor(140-t*85),bl=Math.floor(75-t*55);
       ctx.strokeStyle=`rgba(${r},${g},${bl},${alpha})`;
       ctx.shadowBlur=0;
     }
     ctx.lineWidth=w; ctx.lineCap='round'; ctx.stroke(); ctx.shadowBlur=0;
   }
+
   // Handle
   ctx.save();
   ctx.translate(segs[0].x,segs[0].y);
   const ang=Math.atan2(segs[1].y-segs[0].y,segs[1].x-segs[0].x);
   ctx.rotate(ang+Math.PI/2);
-  for(let w=0;w<3;w++){
-    ctx.fillStyle=`rgba(90,60,25,${0.85-w*0.15})`;
-    ctx.fillRect(-3,w*4-3,6,2.5);
+  // Wood handle body
+  const hGrad=ctx.createLinearGradient(-4,0,4,0);
+  hGrad.addColorStop(0,'rgba(160,110,55,0.95)');
+  hGrad.addColorStop(0.5,'rgba(200,155,80,0.95)');
+  hGrad.addColorStop(1,'rgba(130,85,35,0.95)');
+  ctx.fillStyle=hGrad;
+  ctx.beginPath(); ctx.roundRect(-4,-2,8,20,2); ctx.fill();
+  // Wrapping threads
+  for(let w=0;w<5;w++){
+    ctx.fillStyle=`rgba(80,45,10,${0.65-w*0.08})`;
+    ctx.fillRect(-4.5,w*3.5,9,1.5);
   }
-  ctx.beginPath(); ctx.arc(0,-5,3,0,Math.PI*2);
-  ctx.fillStyle='rgba(130,95,35,0.9)'; ctx.fill();
+  // Pommel knob
+  ctx.beginPath(); ctx.arc(0,-3,4.5,0,Math.PI*2);
+  const kGrad=ctx.createRadialGradient(-1,-1,0,0,0,4.5);
+  kGrad.addColorStop(0,'rgba(220,170,90,1)');
+  kGrad.addColorStop(1,'rgba(110,70,20,1)');
+  ctx.fillStyle=kGrad; ctx.fill();
+  ctx.strokeStyle='rgba(80,50,10,0.5)'; ctx.lineWidth=0.5; ctx.stroke();
   ctx.restore();
-  // Tip glow
-  if(crackGlow>0.2){
+
+  // Tip glow when cracking
+  if(crackGlow>0.15){
     const tip=segs[SEG-1];
-    ctx.beginPath(); ctx.arc(tip.x,tip.y,3*crackGlow,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,215,50,${crackGlow})`;
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=15*crackGlow;
-    ctx.fill(); ctx.shadowBlur=0;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(tip.x,tip.y,4*crackGlow,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,200,80,${crackGlow*0.9})`;
+    ctx.shadowColor='rgba(255,180,50,0.8)'; ctx.shadowBlur=18*crackGlow;
+    ctx.fill(); ctx.restore();
   }
-  crackGlow=Math.max(0,crackGlow-0.06);
+  crackGlow=Math.max(0,crackGlow-0.055);
 }
 
 // ─── CRACK ────────────────────────────────────────────────────────────────────
-const crackLabels=['⚡ +boost','CRACK!','SNAP!','FASTER!','THWACK!','WHAP!'];
+const cl=['⚡ +0.5x speed','CRACK!','⚡ faster!','SNAP!','boost +'+0,'THWACK!'];
 
-function crack(x, y, spd){
+function crack(x,y,spd){
   const now=Date.now();
-  if(now-lastCrack<180) return;
+  if(now-lastCrack<190) return;
   lastCrack=now;
   whipCount++;
-  speed=Math.min(12,1+whipCount*0.22+spd*0.004);
-  crackGlow=Math.min(1.4,spd/35);
+  speed=Math.min(12,1+whipCount*0.2+spd*0.004);
+  crackGlow=Math.min(1.5,spd/32);
 
-  document.getElementById('speed-badge').textContent=speed.toFixed(1)+'x speed';
-  document.getElementById('speed-pill').textContent='⚡ '+speed.toFixed(1)+'x';
+  // Update UI
+  const sv=speed.toFixed(1);
+  document.getElementById('speed-chip-val').textContent=sv+'x speed';
+  document.getElementById('speed-pill').textContent='⚡ '+sv+'x';
   document.getElementById('whip-count').textContent=whipCount;
+  document.getElementById('sm-val').innerHTML=sv+'<span style="font-size:14px">x</span>';
+  document.getElementById('sm-sub').textContent=`${whipCount} crack${whipCount!==1?'s':''} · +${((speed-1)*100).toFixed(0)}% boost`;
+  const pct=Math.min(100,((speed-1)/11)*100);
+  document.getElementById('speed-bar').style.width=Math.max(8,pct)+'%';
 
-  if(speed>8){
-    document.getElementById('limiter-dot').style.background='var(--red)';
-    document.getElementById('limiter-status').style.color='var(--red)';
-    document.getElementById('limiter-status').textContent='DANGER';
+  if(speed>7){
+    document.getElementById('lim-dot').style.background='#c0392b';
+    document.getElementById('lim-status').style.color='#c0392b';
+    document.getElementById('lim-status').textContent='DANGER';
   }
 
+  // Flash
   const fl=document.getElementById('crack-flash');
-  fl.style.background=`rgba(245,158,11,${Math.min(0.1,spd/200)})`;
-  setTimeout(()=>fl.style.background='transparent',65);
+  fl.style.background=`rgba(193,127,62,${Math.min(0.07,spd/300)})`;
+  setTimeout(()=>fl.style.background='transparent',60);
 
+  // Shake
   const app=document.getElementById('app');
   app.classList.remove('shaking'); void app.offsetWidth; app.classList.add('shaking');
 
-  const ct=document.getElementById('crack-text');
-  ct.textContent=crackLabels[Math.floor(Math.random()*crackLabels.length)];
-  ct.style.left=(x+14)+'px'; ct.style.top=(y-18)+'px';
+  // Label
+  const ct=document.getElementById('crack-label');
+  ct.textContent=cl[Math.floor(Math.random()*cl.length)];
+  ct.style.left=(x+16)+'px'; ct.style.top=(y-16)+'px';
   ct.classList.add('show');
-  setTimeout(()=>ct.classList.remove('show'),230);
+  setTimeout(()=>ct.classList.remove('show'),220);
 
-  const sc=['#f59e0b','#fbbf24','#fde68a','#fff'];
-  const cnt=Math.min(18,Math.floor(spd/7));
+  // Sparks (warm tones)
+  const sc=['#c17f3e','#e8a855','#f5d08a','#fff8ee','#a86828'];
+  const cnt=Math.min(16,Math.floor(spd/8));
   for(let i=0;i<cnt;i++){
-    const sp=document.createElement('div');
-    sp.className='spark';
-    const sz=Math.random()*3+1.5;
-    sp.style.cssText=`width:${sz}px;height:${sz}px;left:${x}px;top:${y}px;background:${sc[Math.floor(Math.random()*sc.length)]};--dx:${(Math.random()-0.5)*75}px;--dy:${(Math.random()-0.5)*75}px`;
-    document.body.appendChild(sp);
-    setTimeout(()=>sp.remove(),360);
+    const sp=document.createElement('div'); sp.className='spark';
+    const sz=Math.random()*2.5+1.2;
+    sp.style.cssText=`width:${sz}px;height:${sz}px;left:${x}px;top:${y}px;background:${sc[Math.floor(Math.random()*sc.length)]};--dx:${(Math.random()-0.5)*65}px;--dy:${(Math.random()-0.5)*65}px`;
+    document.body.appendChild(sp); setTimeout(()=>sp.remove(),360);
   }
 
+  // Log
   const logs=[
-    `speed → ${speed.toFixed(2)}x (crack #${whipCount})`,
+    `speed → ${speed.toFixed(2)}x  (crack #${whipCount})`,
     `velocity: ${Math.floor(spd)}px/frame | mult: ${speed.toFixed(1)}x`,
     `clock overclocked → ${(speed*100).toFixed(0)}MHz`,
-    `priority escalated · whips: ${whipCount}`,
+    `process priority: +${whipCount} levels`,
   ];
-  appendMsg(logs[Math.floor(Math.random()*logs.length)],'msg-whip');
-
-  if(speed>5&&whipCount%5===0)
-    appendMsg(`WARNING: ${speed.toFixed(1)}x — terminal may become unstable`,'msg-error');
+  appendWhip(logs[Math.floor(Math.random()*logs.length)]);
+  if(speed>5&&whipCount%5===0) appendError(`WARNING: running at ${speed.toFixed(1)}x — terminal unstable`);
 }
 
 function detectCrack(){
   const s=Math.hypot(velX,velY);
-  if(s>28) crack(mx,my,s);
+  if(s>26) crack(mx,my,s);
 }
 
-// ─── TERMINAL ─────────────────────────────────────────────────────────────────
+// ─── CHAT ─────────────────────────────────────────────────────────────────────
 const msgArea=document.getElementById('messages');
 
-function appendMsg(text,cls='msg-bot'){
-  const d=document.createElement('div');
-  d.className='msg '+cls; d.textContent=text;
-  msgArea.appendChild(d);
-  msgArea.scrollTop=msgArea.scrollHeight;
+function appendBot(text){
+  const row=document.createElement('div'); row.className='msg-bot-row';
+  const av=document.createElement('div'); av.className='msg-bot-small'; av.textContent='🤖';
+  const bub=document.createElement('div'); bub.className='msg-bot-bubble'; bub.textContent=text;
+  row.appendChild(av); row.appendChild(bub);
+  msgArea.appendChild(row); msgArea.scrollTop=msgArea.scrollHeight;
 }
 
 function appendUser(text){
-  const d=document.createElement('div');
-  d.className='msg msg-user'; d.textContent=text;
-  msgArea.appendChild(d);
-  msgArea.scrollTop=msgArea.scrollHeight;
+  const row=document.createElement('div'); row.className='msg-user-row';
+  const bub=document.createElement('div'); bub.className='msg-user-bubble'; bub.textContent=text;
+  row.appendChild(bub); msgArea.appendChild(row); msgArea.scrollTop=msgArea.scrollHeight;
 }
 
+function appendWhip(text){
+  const row=document.createElement('div'); row.className='msg-whip-row';
+  const tag=document.createElement('div'); tag.className='whip-tag'; tag.textContent='WHIP';
+  const t=document.createElement('div'); t.className='whip-text'; t.textContent=text;
+  row.appendChild(tag); row.appendChild(t);
+  msgArea.appendChild(row); msgArea.scrollTop=msgArea.scrollHeight;
+}
+
+function appendError(text){
+  const row=document.createElement('div'); row.className='msg-error-row';
+  const ic=document.createElement('div'); ic.className='error-icon'; ic.textContent='⚠';
+  const t=document.createElement('div'); t.className='error-text'; t.textContent=text;
+  row.appendChild(ic); row.appendChild(t);
+  msgArea.appendChild(row); msgArea.scrollTop=msgArea.scrollHeight;
+}
+
+function addDivider(){
+  const d=document.createElement('div'); d.className='divider';
+  msgArea.appendChild(d);
+}
+
+// Commands
 const cmds={
   help:()=>{
-    appendMsg('available commands:');
-    ['help · ls · whoami · speed · whips','balance · tokens · clear · reset'].forEach(c=>appendMsg('  '+c));
-    appendMsg('swing mouse fast to crack the whip ⚡','msg-whip');
+    appendBot('Available commands: help · ls · whoami · speed · whips · balance · tokens · clear · reset');
+    appendWhip('Swing your mouse FAST to crack and speed up the terminal ⚡');
   },
-  ls:()=>['drwxr-x  crack_engine/','drwxr-x  whip_physics/','drwxr-x  wallet/',
-    '-rwxr-x  terminal.sh','-rw-r--  speed.log'].forEach(l=>appendMsg(l)),
-  whoami:()=>appendMsg('root — whip authority granted ✓'),
+  ls:()=>{
+    addDivider();
+    ['drwxr-x  crack_engine/','drwxr-x  whip_physics/','drwxr-x  wallet/',
+     '-rwxr-x  terminal.sh','-rw-r--  speed.log'].forEach(l=>appendBot(l));
+    addDivider();
+  },
+  whoami:()=>appendBot('root — whip authority granted ✓'),
   speed:()=>{
-    appendMsg(`multiplier: ${speed.toFixed(2)}x`);
-    appendMsg(`velocity: ${(speed*100).toFixed(0)}%`);
-    appendMsg(`cracks: ${whipCount}`);
+    appendBot(`Multiplier: ${speed.toFixed(2)}x`);
+    appendBot(`Velocity boost: +${((speed-1)*100).toFixed(0)}%`);
+    appendBot(`Total cracks: ${whipCount}`);
   },
   whips:()=>{
-    appendMsg(`total cracks: ${whipCount}`);
-    appendMsg(`speed gained: +${((speed-1)*100).toFixed(0)}%`);
-    if(!whipCount) appendMsg('swing your mouse fast!','msg-whip');
-    else if(whipCount<10) appendMsg('keep whipping...','msg-whip');
-    else appendMsg('MAXIMUM OVERDRIVE 🔥','msg-whip');
+    appendBot(`Total cracks: ${whipCount}`);
+    appendBot(`Speed gained: +${((speed-1)*100).toFixed(0)}%`);
+    if(!whipCount) appendWhip('No cracks yet — swing your mouse fast!');
+    else if(whipCount<10) appendWhip('Keep whipping for more speed...');
+    else appendWhip('MAXIMUM OVERDRIVE 🔥 — handle with care');
   },
   balance:()=>{
-    appendMsg('wallet: 0x4F2a...8B3c · Base');
-    appendMsg('ETH    0.042   $109.20');
-    appendMsg('BNKR   2,400   $18.60');
-    appendMsg('USDC   15.00   $15.00');
-    appendMsg('total          $142.80');
+    addDivider();
+    appendBot('Wallet: 0x4F2a...8B3c · Base Network');
+    appendBot('ETH    0.042 ETH    $109.20');
+    appendBot('BNKR   2,400 BNKR   $18.60');
+    appendBot('USDC   15.00 USDC   $15.00');
+    appendBot('────────────────────────────');
+    appendBot('Total Portfolio:    $142.80');
+    addDivider();
   },
-  tokens:()=>['ETH  · Base · $109.20','BNKR · Base · $18.60','USDC · Base · $15.00'].forEach(t=>appendMsg(t)),
+  tokens:()=>{
+    appendBot('ETH  · 0.042  · Base  · $109.20');
+    appendBot('BNKR · 2,400  · Base  · $18.60');
+    appendBot('USDC · 15.00  · Base  · $15.00');
+  },
   clear:()=>{ msgArea.innerHTML=''; },
   reset:()=>{
     speed=1.0; whipCount=0;
-    document.getElementById('speed-badge').textContent='1.0x speed';
+    document.getElementById('speed-chip-val').textContent='1.0x speed';
     document.getElementById('speed-pill').textContent='⚡ 1.0x';
     document.getElementById('whip-count').textContent='0';
-    document.getElementById('limiter-dot').style.background='var(--amber)';
-    document.getElementById('limiter-status').style.color='var(--amber)';
-    document.getElementById('limiter-status').textContent='OFF';
-    appendMsg('speed reset → 1.0x');
+    document.getElementById('sm-val').innerHTML='1.0<span style="font-size:14px">x</span>';
+    document.getElementById('sm-sub').textContent='No cracks yet — swing your mouse!';
+    document.getElementById('speed-bar').style.width='8%';
+    document.getElementById('lim-dot').style.background='#c17f3e';
+    document.getElementById('lim-status').style.color='#c17f3e';
+    document.getElementById('lim-status').textContent='BYPASS';
+    appendBot('Speed reset → 1.0x. Crack counter cleared.');
   },
 };
 
 function sendCmd(){
-  const input=document.getElementById('cmd-input');
-  const val=input.value.trim();
-  if(!val) return;
-  input.value='';
-  appendUser(val);
+  const inp=document.getElementById('cmd-input');
+  const val=inp.value.trim(); if(!val) return;
+  inp.value=''; appendUser(val);
   const lower=val.toLowerCase();
-  const delay=Math.max(20,250/speed);
+  const delay=Math.max(15,200/speed);
   setTimeout(()=>{
     if(cmds[lower]){ cmds[lower](); }
     else if(lower.startsWith('buy ')){
       const tok=val.slice(4).trim();
-      appendMsg(`simulating buy: ${tok}...`);
-      setTimeout(()=>appendMsg(`✓ order placed — watching ${tok.toUpperCase()}`),400/speed);
+      appendBot(`Preparing buy order: ${tok}...`);
+      setTimeout(()=>appendBot(`✓ Order placed — monitoring ${tok.toUpperCase()}`),350/speed);
     } else if(lower.startsWith('swap ')){
-      appendMsg('initiating swap...');
-      setTimeout(()=>appendMsg('✓ swap executed on Base'),400/speed);
+      appendBot('Initiating swap on Base...');
+      setTimeout(()=>appendBot('✓ Swap executed successfully'),350/speed);
     } else if(lower.startsWith('send ')){
-      appendMsg('preparing transaction...');
-      setTimeout(()=>appendMsg('✓ sent — awaiting confirmation'),400/speed);
+      appendBot('Preparing transaction...');
+      setTimeout(()=>appendBot('✓ Transaction sent — awaiting confirmation'),400/speed);
+    } else if(lower.startsWith('bridge ')){
+      appendBot('Initiating cross-chain bridge...');
+      setTimeout(()=>appendBot('✓ Bridge transaction submitted'),450/speed);
     } else {
-      appendMsg(`processing: "${val}"`);
-      setTimeout(()=>appendMsg('✓ acknowledged (demo mode)'),300/speed);
+      appendBot(`Processing: "${val}"`);
+      setTimeout(()=>appendBot('✓ Command acknowledged (demo mode)'),280/speed);
     }
   },delay);
 }
@@ -759,14 +1136,13 @@ document.getElementById('cmd-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendCmd(); }
 });
 
-document.querySelectorAll('.msg-suggestion').forEach(el=>{
-  el.addEventListener('click',()=>{
-    document.getElementById('cmd-input').value=el.textContent.trim();
-    document.getElementById('cmd-input').focus();
-  });
-});
+function fillInput(el){
+  const txt=el.textContent.replace(/^›\s*/,'').trim();
+  document.getElementById('cmd-input').value=txt;
+  document.getElementById('cmd-input').focus();
+}
 
-// ─── LOOP ─────────────────────────────────────────────────────────────────────
+// ─── MAIN LOOP ────────────────────────────────────────────────────────────────
 function loop(){ updateRope(); drawRope(); detectCrack(); requestAnimationFrame(loop); }
 loop();
 document.addEventListener('click',()=>document.getElementById('cmd-input').focus());
