@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Evolution Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Mencegah scroll */
+            background-color: black;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #container {
+            position: relative;
+            text-align: center;
+        }
+
+        #topText, #bottomText {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+        }
+
+        #topText {
+            top: -50px; /* Jarak di atas lingkaran */
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #bottomText {
+            bottom: -40px; /* Jarak di bawah lingkaran */
+            font-size: 18px;
+        }
+
+        canvas {
+            border-radius: 50%;
+            display: block;
+            /* Memberikan efek gradient pada border seperti video */
+            border: 10px solid;
+            border-image: linear-gradient(to right, #61ff9e, #8c61ff, #ff617a, #ffd461) 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <div id="topText">With every bounce, the ball evolves !...</div>
+    <canvas id="simCanvas"></canvas>
+    <div id="bottomText">BALLSIMULATOR.COM</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Menentukan ukuran canvas berdasarkan viewport (biar responsif)
+    const containerSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.7, 500); // Max 500px
+    canvas.width = containerSize;
+    canvas.height = containerSize;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const circleRadius = (containerSize / 2) - 15; // Jarak dari border
+
+    // Properti Bola
+    let ball = {
+        x: centerX,
+        y: centerY,
+        vx: 5, // Kecepatan X awal
+        vy: 3, // Kecepatan Y awal
+        radius: 10, // Ukuran awal
+        color: '#5cffca',
+        trails: [] // Array untuk menyimpan jejak
+    };
+
+    const trailLength = 100; // Berapa banyak titik jejak yang disimpan
+    const evolutionScale = 0.8; // Seberapa cepat bola membesar per pantulan
+    const maxBallRadius = circleRadius * 0.8; // Ukuran maksimal bola (sebelum memenuhi lingkaran)
+
+    function draw() {
+        // Membersihkan canvas (tapi tidak sepenuhnya untuk efek jejak)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Sedikit transparan untuk membuat jejak memudar
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Menggambar Jejak (Trails)
+        ball.trails.forEach((point, index) => {
+            ctx.beginPath();
+            // Semakin tua jejak, semakin transparan
+            ctx.fillStyle = `rgba(180, 220, 255, ${0.1 * (index / trailLength)})`;
+            ctx.arc(point.x, point.y, 2, 0, Math.PI * 2); // Titik jejak kecil
+            ctx.fill();
+            ctx.closePath();
+        });
+
+        // Menggambar Lingkaran Pembatas (opsional, karena border canvas sudah berwarna)
+        // ctx.beginPath();
+        // ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
+        // ctx.strokeStyle = '#61ff9e'; // Mengikuti warna awal video
+        // ctx.lineWidth = 3;
+        // ctx.stroke();
+        // ctx.closePath();
+
+        // Menggambar Bola
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = ball.color;
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function update() {
+        // Simpan posisi saat ini ke dalam jejak
+        ball.trails.push({x: ball.x, y: ball.y});
+        if (ball.trails.length > trailLength) {
+            ball.trails.shift(); // Hapus jejak tertua
+        }
+
+        // Pindahkan bola
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        // Cek tabrakan dengan batas lingkaran
+        let dx = ball.x - centerX;
+        let dy = ball.y - centerY;
+        let distance = Math.sqrt(dx*dx + dy*dy);
+
+        if (distance + ball.radius >= circleRadius) {
+            // TERJADI PANTULAN
+
+            // 1. Hitung vektor normal pantulan (dari pusat lingkaran ke titik kontak)
+            let nx = dx / distance;
+            let ny = dy / distance;
+
+            // 2. Refleksikan vektor kecepatan bola berdasarkan normal
+            let dotProduct = ball.vx * nx + ball.vy * ny;
+            ball.vx = ball.vx - 2 * dotProduct * nx;
+            ball.vy = ball.vy - 2 * dotProduct * ny;
+
+            // 3. Pastikan bola tidak 'terjebak' di luar lingkaran
+            let overlap = (distance + ball.radius) - circleRadius;
+            ball.x -= nx * overlap;
+            ball.y -= ny * overlap;
+
+            // 4. EVOLUSI: Perbesar bola
+            if (ball.radius < maxBallRadius) {
+                ball.radius += evolutionScale;
+            }
+        }
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Memulai loop simulasi
+    loop();
+
+</script>
+
+</body>
+</html>
