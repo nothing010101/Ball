@@ -3,30 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clanker Simulator</title>
+    <title>Terminal Whip</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="main-container">
-        <div class="terminal-window">
-            <div class="terminal-header">
-                <span class="control red"></span>
-                <span class="control yellow"></span>
-                <span class="control green"></span>
-                <span class="title">Read and execute Task.txt file</span>
+    <div class="split-layout">
+        <div class="terminal-section">
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <span class="control red"></span>
+                    <span class="control yellow"></span>
+                    <span class="control green"></span>
+                    <span class="title">Execution Log</span>
+                </div>
+                <div id="terminal-container"></div>
             </div>
-            <div id="terminal-container"></div>
         </div>
 
-        <div class="controls">
-            <div class="whip-container" id="whip-action">
-                <svg class="whip-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                    <path class="whip-handle" d="M15,85 L30,60" stroke="#8B4513" stroke-width="8" stroke-linecap="round"/>
-                    <path class="whip-lash" d="M30,60 Q50,20 80,40 T95,15" fill="transparent" stroke="#333" stroke-width="3" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <p class="instruction">Crack the whip to accelerate rendering.</p>
+        <div class="whip-section">
+            <p class="instruction-text">DRAG the handle and RELEASE to crack the whip.</p>
+            <canvas id="whipCanvas"></canvas>
         </div>
     </div>
 
