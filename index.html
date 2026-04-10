@@ -3,171 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Ball Physics Simulator</title>
+    <title>3D Space Simulator - Rocket & Meteor</title>
     <style>
-        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #canvas-container { position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        canvas { display: block; border-radius: 50%; border: 4px solid #333; }
-        .ui-overlay { position: absolute; top: -40px; width: 100%; text-align: center; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
-        /* Style untuk GUI agar terlihat profesional */
-        .lil-gui { --width: 250px; --name-width: 40%; }
+        body { margin: 0; background-color: #000; overflow: hidden; font-family: sans-serif; }
+        #ui {
+            position: absolute; top: 20px; left: 20px; color: white;
+            pointer-events: none; text-shadow: 2px 2px 4px #000;
+        }
+        .instruction { font-size: 0.9em; opacity: 0.8; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
-<div id="canvas-container">
-    <div class="ui-overlay" id="statusText">Bounces: 0</div>
-    <canvas id="simCanvas"></canvas>
+<div id="ui">
+    <h1>Space Simulator 3D</h1>
+    <p class="instruction">Klik di mana saja untuk meluncurkan Meteor ke arah Bumi!</p>
+    <div id="stats">Meteor Aktif: 0</div>
 </div>
 
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+</script>
+
 <script type="module">
-    import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    const canvas = document.getElementById('simCanvas');
-    const ctx = canvas.getContext('2d');
-    const statusText = document.getElementById('statusText');
+    // 1. SETUP SCENE
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    // KONFIGURASI YANG BISA DIKONTROL
-    const params = {
-        speed: 5,
-        gravity: 0.15,
-        friction: 0.999,
-        growthRate: 1.2,
-        trailOpacity: 0.1,
-        maxTrails: 150,
-        colorHue: 180,
-        enableSound: true,
-        reset: () => resetSim()
-    };
+    // 2. LIGHTING
+    const sunLight = new THREE.PointLight(0xffffff, 2, 100);
+    sunLight.position.set(10, 10, 10);
+    scene.add(sunLight);
+    scene.add(new THREE.AmbientLight(0x404040)); // Cahaya redup agar sisi gelap planet terlihat
 
-    // Setup GUI
-    const gui = new GUI();
-    gui.add(params, 'speed', 1, 20).name('Kecepatan Awal');
-    gui.add(params, 'gravity', 0, 1).name('Gravitasi');
-    gui.add(params, 'growthRate', 0, 5).name('Pertumbuhan');
-    gui.add(params, 'trailOpacity', 0.01, 0.5).name('Kepekatan Jejak');
-    gui.add(params, 'colorHue', 0, 360).name('Warna (Hue)');
-    gui.add(params, 'enableSound').name('Efek Suara');
-    gui.add(params, 'reset').name('RESET SIMULASI');
+    // 3. PLANET (Bumi Sederhana)
+    const earthGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const earthMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x2233ff, 
+        wireframe: false,
+        emissive: 0x112244
+    });
+    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    scene.add(earth);
 
-    // Inisialisasi Ukuran
-    const size = Math.min(window.innerWidth * 0.8, 600);
-    canvas.width = size;
-    canvas.height = size;
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const boundaryRadius = (size / 2) - 10;
+    // Bintang-bintang di background
+    const starGeometry = new THREE.BufferGeometry();
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+    const starVertices = [];
+    for (let i = 0; i < 5000; i++) {
+        starVertices.push((Math.random() - 0.5) * 1000, (Math.random() - 0.5) * 1000, (Math.random() - 0.5) * 1000);
+    }
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
 
-    let ball, bounces;
+    camera.position.z = 10;
+    const controls = new OrbitControls(camera, renderer.domElement);
 
-    function resetSim() {
-        bounces = 0;
-        ball = {
-            x: centerX,
-            y: centerY,
-            vx: params.speed,
-            vy: 0,
-            radius: 15,
-            trails: []
-        };
+    // 4. LOGIK METEOR
+    const meteors = [];
+    const statsElement = document.getElementById('stats');
+
+    function launchMeteor() {
+        // Buat meteor kecil
+        const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+        const material = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const meteor = new THREE.Mesh(geometry, material);
+
+        // Posisi awal acak di kejauhan
+        const angle = Math.random() * Math.PI * 2;
+        meteor.position.set(Math.cos(angle) * 15, Math.sin(angle) * 15, (Math.random() - 0.5) * 10);
+        
+        // Vektor kecepatan menuju pusat (Bumi)
+        const direction = new THREE.Vector3().subVectors(earth.position, meteor.position).normalize();
+        meteor.userData.velocity = direction.multiplyScalar(0.1 + Math.random() * 0.2);
+
+        scene.add(meteor);
+        meteors.push(meteor);
+        statsElement.innerText = `Meteor Aktif: ${meteors.length}`;
     }
 
-    // Fungsi Suara (Audio Context)
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBounceSound(freq) {
-        if (!params.enableSound) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
-    }
+    // Event listener untuk klik
+    window.addEventListener('mousedown', launchMeteor);
 
-    function update() {
-        // Gravitasi & Friksi
-        ball.vy += params.gravity;
-        ball.vx *= params.friction;
-        ball.vy *= params.friction;
+    // 5. ANIMATION LOOP
+    function animate() {
+        requestAnimationFrame(animate);
 
-        ball.x += ball.vx;
-        ball.y += ball.vy;
+        // Rotasi bumi
+        earth.rotation.y += 0.005;
 
-        // Cek Tabrakan Lingkaran
-        const dx = ball.x - centerX;
-        const dy = ball.y - centerY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        // Update posisi meteor
+        for (let i = meteors.length - 1; i >= 0; i--) {
+            const m = meteors[i];
+            m.position.add(m.userData.velocity);
 
-        if (dist + ball.radius >= boundaryRadius) {
-            const nx = dx / dist;
-            const ny = dy / dist;
-
-            // Pantulan fisik
-            const dot = ball.vx * nx + ball.vy * ny;
-            ball.vx = (ball.vx - 2 * dot * nx) * 1.05; // Sedikit boost kecepatan tiap pantul
-            ball.vy = (ball.vy - 2 * dot * ny) * 1.05;
-
-            // Koreksi posisi
-            const overlap = (dist + ball.radius) - boundaryRadius;
-            ball.x -= nx * overlap;
-            ball.y -= ny * overlap;
-
-            // Evolusi
-            ball.radius += params.growthRate;
-            bounces++;
-            statusText.innerText = `Bounces: ${bounces}`;
-            
-            // Play Sound (Frekuensi naik tiap pantulan)
-            playBounceSound(200 + (bounces * 10));
+            // Cek tabrakan (jarak ke pusat bumi < radius bumi)
+            if (m.position.distanceTo(earth.position) < 2) {
+                scene.remove(m);
+                meteors.splice(i, 1);
+                
+                // Efek visual sederhana saat tabrakan (Bumi "berkedip")
+                earth.material.emissive.setHex(0xff0000);
+                setTimeout(() => earth.material.emissive.setHex(0x112244), 100);
+                
+                statsElement.innerText = `Meteor Aktif: ${meteors.length}`;
+            }
         }
 
-        // Simpan Jejak
-        ball.trails.push({x: ball.x, y: ball.y, r: ball.radius});
-        if (ball.trails.length > params.maxTrails) ball.trails.shift();
+        controls.update();
+        renderer.render(scene, camera);
     }
 
-    function draw() {
-        // Background trail effect
-        ctx.fillStyle = `rgba(5, 5, 5, ${params.trailOpacity})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    animate();
 
-        // Gambar Jejak
-        ball.trails.forEach((t, i) => {
-            ctx.beginPath();
-            ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${params.colorHue}, 80%, 50%, ${i / ball.trails.length * 0.2})`;
-            ctx.fill();
-        });
-
-        // Gambar Lingkaran Pembatas
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, boundaryRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = `hsl(${params.colorHue}, 100%, 50%)`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Gambar Bola Utama
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `hsl(${params.colorHue}, 100%, 60%)`;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = `hsl(${params.colorHue}, 100%, 50%)`;
-        ctx.fill();
-        ctx.shadowBlur = 0; // Reset shadow biar tidak berat
-    }
-
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-
-    resetSim();
-    loop();
+    // Responsif jika window di-resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 </script>
+
 </body>
 </html>
