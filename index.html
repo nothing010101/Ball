@@ -390,7 +390,62 @@ textarea#tagout:focus { border-color:var(--muted); }
   line-height:1.5;
 }
 
-/* Animations */
+/* Tag list per item */
+.tag-list { display:flex; flex-direction:column; gap:8px; }
+
+.tag-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 14px;
+  gap:10px;
+  animation: chipPop 0.2s ease both;
+  transition: border-color 0.15s;
+}
+
+.tag-row:hover { border-color: var(--border2); }
+.tag-row.done { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.04); }
+
+.tag-row-text {
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  color:var(--text);
+  flex:1;
+}
+
+.tag-row.done .tag-row-text { color: var(--success); }
+
+.tag-copy-btn {
+  background: rgba(192,132,252,0.1);
+  border: 1px solid rgba(192,132,252,0.25);
+  color: var(--acc);
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  padding:6px 14px;
+  border-radius:6px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all 0.12s;
+  flex-shrink:0;
+}
+.tag-copy-btn:hover { background:rgba(192,132,252,0.2); }
+.tag-copy-btn.done-btn {
+  background: rgba(52,211,153,0.12);
+  border-color: rgba(52,211,153,0.3);
+  color: var(--success);
+}
+
+.tag-num {
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--muted);
+  width:22px;
+  text-align:right;
+  flex-shrink:0;
+}
 @keyframes fadeIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 @keyframes chipPop { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
@@ -489,37 +544,11 @@ textarea#tagout:focus { border-color:var(--muted); }
     </div>
 
     <div class="paste-info">
-      ✅ <strong>Cara paste yang benar:</strong> Klik tombol <em>COPY TAG</em> di bawah → buka YouTube Studio → klik kolom Tag → <strong>Ctrl+V / paste</strong> → tiap tag otomatis terpisah sendiri.
+      📱 <strong>Mobile:</strong> Tap <em>SALIN</em> di tiap tag → buka YT Studio → tap kolom Tag → Tempel. Ulangi.<br>
+      💻 <strong>Desktop:</strong> Klik <em>SALIN</em> lalu paste langsung, atau gunakan tombol Tambah ke clipboard.
     </div>
 
-    <div class="tag-cloud" id="tagCloud"></div>
-
-    <div class="charbar-wrap">
-      <div class="charbar-info">
-        <span>Limit YouTube 500 karakter</span>
-        <span class="live" id="pctText">0%</span>
-      </div>
-      <div class="charbar"><div class="charbar-fill" id="charFill" style="width:0%"></div></div>
-    </div>
-
-    <div class="fmt-toggle">
-      <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Tampilan output:</span>
-      <button id="fmtEnter" class="fmt-btn active-fmt" onclick="setFmt('enter')">Per baris</button>
-      <button id="fmtComma" class="fmt-btn" onclick="setFmt('comma')">Koma</button>
-    </div>
-
-    <div class="out-box">
-      <textarea id="tagout" readonly></textarea>
-    </div>
-
-    <div class="actions">
-      <button class="btn btn-copy" id="copyBtn" onclick="copyAll()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        COPY TAG → PASTE KE YT STUDIO
-      </button>
-      <button class="btn btn-outline" onclick="selectAll()">Pilih Semua</button>
-      <button class="btn btn-outline" onclick="clearAll()">Hapus Pilihan</button>
-    </div>
+    <div id="tagList"></div>
   </div>
 
 </div>
@@ -533,7 +562,7 @@ const TAGS = {
     "girl next door","cewe indo","cewek indonesia","wanita indonesia","cewe lokal",
     "cewek lokal","hot indonesia","sexy indonesia","cewe ig","cewek ig",
     "cewe tiktok","cewek tiktok","hot video","sexy video","viral video",
-    "konten dewasa","konten 18+","shorts viral","youtube shorts","fyp",
+    "konten dewasa","shorts viral","youtube shorts","fyp",
     "for you page","trending","foryou","viral shorts"
   ],
   beauty: [
@@ -552,7 +581,7 @@ const TAGS = {
     "abs workout","home workout","olahraga di rumah","fitness motivation",
     "motivasi olahraga","gym girl","fitness girl","wanita gym","cewe gym",
     "latihan perut","latihan kaki","squat","yoga","pilates","cardio",
-    "fat loss","muscle gain","body goals","physique","fitness content",
+    "fat loss","muscle gain","physique","fitness content",
     "transformation body","workout video","gym video"
   ],
   fashion: [
@@ -630,111 +659,74 @@ const TAGS = {
   ]
 };
 
-let active = new Set(); // selected categories
-let deselected = new Set(); // deselected individual chips
+let activeCats = new Set();
+let currentTags = [];
 
 function toggleCat(btn) {
   const cat = btn.dataset.cat;
-  if (active.has(cat)) {
-    active.delete(cat);
+  if (activeCats.has(cat)) {
+    activeCats.delete(cat);
     btn.classList.remove('active');
   } else {
-    active.add(cat);
+    activeCats.add(cat);
     btn.classList.add('active');
   }
-  deselected.clear();
   rebuild();
 }
 
 function rebuild() {
   const area = document.getElementById('output-area');
-  if (active.size === 0) { area.style.display = 'none'; return; }
+  if (activeCats.size === 0) { area.style.display = 'none'; return; }
 
-  // Collect tags, dedupe, preserve order
   const seen = new Set();
-  const tags = [];
-  for (const cat of active) {
+  currentTags = [];
+  for (const cat of activeCats) {
     for (const t of TAGS[cat]) {
-      if (!seen.has(t)) { seen.add(t); tags.push({ cat, tag: t }); }
+      if (!seen.has(t)) { seen.add(t); currentTags.push(t); }
     }
   }
 
-  window._tags = tags;
-  renderChips(tags);
-  updateOutput(tags);
+  // Update pills
+  const totalChars = currentTags.join(',').length;
+  document.getElementById('tagCountPill').textContent = currentTags.length + ' tag';
+  document.getElementById('charPill').textContent = totalChars + ' / 500';
+
+  renderTagList();
   area.style.display = 'block';
 }
 
-function renderChips(tags) {
-  const cloud = document.getElementById('tagCloud');
-  cloud.innerHTML = '';
-  tags.forEach((item, i) => {
-    const ch = document.createElement('div');
-    ch.className = 'chip' + (deselected.has(i) ? ' off' : '');
-    ch.textContent = item.tag;
-    ch.style.animationDelay = Math.min(i * 0.015, 0.5) + 's';
-    ch.onclick = () => {
-      deselected.has(i) ? deselected.delete(i) : deselected.add(i);
-      ch.classList.toggle('off');
-      updateOutput(window._tags);
-    };
-    cloud.appendChild(ch);
+function renderTagList() {
+  const list = document.getElementById('tagList');
+  list.innerHTML = '<div class="tag-list" id="tagListInner"></div>';
+  const inner = document.getElementById('tagListInner');
+
+  currentTags.forEach((tag, i) => {
+    const row = document.createElement('div');
+    row.className = 'tag-row';
+    row.id = 'row-' + i;
+    row.style.animationDelay = Math.min(i * 0.02, 0.6) + 's';
+    row.innerHTML = `
+      <span class="tag-num">${i+1}</span>
+      <span class="tag-row-text">${tag}</span>
+      <button class="tag-copy-btn" id="cbtn-${i}" onclick="copyTag(${i}, '${tag.replace(/'/g,"\\'")}')">SALIN</button>
+    `;
+    inner.appendChild(row);
   });
 }
 
-// Format: 'enter' = satu tag per baris (default, untuk YouTube Studio)
-// Format: 'comma' = dipisah koma (untuk referensi)
-let fmt = 'enter';
-
-function updateOutput(tags) {
-  const active_tags = tags.filter((_, i) => !deselected.has(i)).map(x => x.tag);
-  // Hitung karakter pakai format koma (sesuai limit YouTube)
-  const commaStr = active_tags.join(',');
-  const len = commaStr.length;
-  const MAX = 500;
-  const pct = Math.min(100, Math.round(len / MAX * 100));
-
-  // Tampilkan sesuai format pilihan
-  const displayStr = fmt === 'enter' ? active_tags.join('\n') : commaStr;
-  document.getElementById('tagout').value = displayStr;
-  window._activeTags = active_tags;
-
-  document.getElementById('tagCountPill').textContent = active_tags.length + ' tag';
-  document.getElementById('charPill').textContent = len + ' / 500';
-  document.getElementById('pctText').textContent = pct + '%';
-  document.getElementById('charFill').style.width = pct + '%';
-}
-
-function setFmt(f) {
-  fmt = f;
-  document.getElementById('fmtEnter').classList.toggle('active-fmt', f === 'enter');
-  document.getElementById('fmtComma').classList.toggle('active-fmt', f === 'comma');
-  if (window._tags) updateOutput(window._tags);
-}
-
-function selectAll() {
-  deselected.clear();
-  renderChips(window._tags);
-  updateOutput(window._tags);
-}
-
-function clearAll() {
-  window._tags.forEach((_, i) => deselected.add(i));
-  renderChips(window._tags);
-  updateOutput(window._tags);
-}
-
-function copyAll() {
-  const tags = window._activeTags || [];
-  if (!tags.length) return;
-  // Selalu copy dengan format Enter per tag agar YouTube Studio baca tiap tag terpisah
-  const val = tags.join('\n');
-  navigator.clipboard.writeText(val).then(() => {
-    const btn = document.getElementById('copyBtn');
-    const orig = btn.innerHTML;
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> TERSALIN!`;
-    btn.classList.add('copied');
-    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+function copyTag(i, tag) {
+  navigator.clipboard.writeText(tag).then(() => {
+    const row = document.getElementById('row-' + i);
+    const btn = document.getElementById('cbtn-' + i);
+    row.classList.add('done');
+    btn.classList.add('done-btn');
+    btn.textContent = '✓ DISALIN';
+    // Reset after 3 seconds so user can copy again if needed
+    setTimeout(() => {
+      row.classList.remove('done');
+      btn.classList.remove('done-btn');
+      btn.textContent = 'SALIN';
+    }, 3000);
   });
 }
 </script>
