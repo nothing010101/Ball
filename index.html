@@ -291,8 +291,45 @@ textarea#tagout:focus { border-color:var(--muted); }
   transition:width 0.3s ease;
 }
 
-/* Actions */
-.actions { display:flex; gap:8px; flex-wrap:wrap; }
+/* Paste info box */
+.paste-info {
+  background: rgba(52,211,153,0.06);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--success);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.paste-info strong { color: #fff; }
+.paste-info em { font-style: normal; background: rgba(52,211,153,0.15); padding: 1px 6px; border-radius: 4px; }
+
+/* Format toggle */
+.fmt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fmt-btn {
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.fmt-btn:hover { color: var(--text); }
+.fmt-btn.active-fmt {
+  background: rgba(192,132,252,0.12);
+  border-color: rgba(192,132,252,0.4);
+  color: var(--acc);
+}
 
 .btn {
   display:inline-flex;
@@ -451,6 +488,10 @@ textarea#tagout:focus { border-color:var(--muted); }
       </div>
     </div>
 
+    <div class="paste-info">
+      ✅ <strong>Cara paste yang benar:</strong> Klik tombol <em>COPY TAG</em> di bawah → buka YouTube Studio → klik kolom Tag → <strong>Ctrl+V / paste</strong> → tiap tag otomatis terpisah sendiri.
+    </div>
+
     <div class="tag-cloud" id="tagCloud"></div>
 
     <div class="charbar-wrap">
@@ -461,6 +502,12 @@ textarea#tagout:focus { border-color:var(--muted); }
       <div class="charbar"><div class="charbar-fill" id="charFill" style="width:0%"></div></div>
     </div>
 
+    <div class="fmt-toggle">
+      <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Tampilan output:</span>
+      <button id="fmtEnter" class="fmt-btn active-fmt" onclick="setFmt('enter')">Per baris</button>
+      <button id="fmtComma" class="fmt-btn" onclick="setFmt('comma')">Koma</button>
+    </div>
+
     <div class="out-box">
       <textarea id="tagout" readonly></textarea>
     </div>
@@ -468,7 +515,7 @@ textarea#tagout:focus { border-color:var(--muted); }
     <div class="actions">
       <button class="btn btn-copy" id="copyBtn" onclick="copyAll()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        COPY SEMUA TAG
+        COPY TAG → PASTE KE YT STUDIO
       </button>
       <button class="btn btn-outline" onclick="selectAll()">Pilih Semua</button>
       <button class="btn btn-outline" onclick="clearAll()">Hapus Pilihan</button>
@@ -635,18 +682,34 @@ function renderChips(tags) {
   });
 }
 
+// Format: 'enter' = satu tag per baris (default, untuk YouTube Studio)
+// Format: 'comma' = dipisah koma (untuk referensi)
+let fmt = 'enter';
+
 function updateOutput(tags) {
   const active_tags = tags.filter((_, i) => !deselected.has(i)).map(x => x.tag);
-  const str = active_tags.join(',');
-  const len = str.length;
+  // Hitung karakter pakai format koma (sesuai limit YouTube)
+  const commaStr = active_tags.join(',');
+  const len = commaStr.length;
   const MAX = 500;
   const pct = Math.min(100, Math.round(len / MAX * 100));
 
-  document.getElementById('tagout').value = str;
+  // Tampilkan sesuai format pilihan
+  const displayStr = fmt === 'enter' ? active_tags.join('\n') : commaStr;
+  document.getElementById('tagout').value = displayStr;
+  window._activeTags = active_tags;
+
   document.getElementById('tagCountPill').textContent = active_tags.length + ' tag';
   document.getElementById('charPill').textContent = len + ' / 500';
   document.getElementById('pctText').textContent = pct + '%';
   document.getElementById('charFill').style.width = pct + '%';
+}
+
+function setFmt(f) {
+  fmt = f;
+  document.getElementById('fmtEnter').classList.toggle('active-fmt', f === 'enter');
+  document.getElementById('fmtComma').classList.toggle('active-fmt', f === 'comma');
+  if (window._tags) updateOutput(window._tags);
 }
 
 function selectAll() {
@@ -662,8 +725,10 @@ function clearAll() {
 }
 
 function copyAll() {
-  const val = document.getElementById('tagout').value;
-  if (!val) return;
+  const tags = window._activeTags || [];
+  if (!tags.length) return;
+  // Selalu copy dengan format Enter per tag agar YouTube Studio baca tiap tag terpisah
+  const val = tags.join('\n');
   navigator.clipboard.writeText(val).then(() => {
     const btn = document.getElementById('copyBtn');
     const orig = btn.innerHTML;
