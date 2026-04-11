@@ -708,37 +708,35 @@
     document.getElementById('videoInfo').style.display = 'none';
 
     try {
-      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-      
-      // Fetch video metadata via oembed
+      // Fetch video metadata via noembed (CORS-friendly)
       let videoTitle = '';
       let videoChannel = '';
       let thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
       try {
-        const oRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(oembedUrl)}`);
-        const oData = await oRes.json();
-        const oembed = JSON.parse(oData.contents);
-        videoTitle = oembed.title || '';
-        videoChannel = oembed.author_name || '';
+        // noembed.com supports CORS natively
+        const nRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        if (nRes.ok) {
+          const nData = await nRes.json();
+          videoTitle = nData.title || '';
+          videoChannel = nData.author_name || '';
+        }
       } catch(e) {
-        // silent fail, still continue
+        // silent fail — judul bisa kosong, AI masih bisa generate dari video ID
       }
 
       // Show video info
-      if (videoTitle) {
-        document.getElementById('videoTitle').textContent = videoTitle;
-        document.getElementById('videoChannel').textContent = videoChannel ? '📺 ' + videoChannel : '';
-        document.getElementById('videoThumb').src = thumbUrl;
-        document.getElementById('videoInfo').style.display = 'block';
-      }
+      document.getElementById('videoTitle').textContent = videoTitle || '(Judul tidak tersedia)';
+      document.getElementById('videoChannel').textContent = videoChannel ? '📺 ' + videoChannel : '';
+      document.getElementById('videoThumb').src = thumbUrl;
+      document.getElementById('videoInfo').style.display = 'block';
 
       setStatus('AI sedang menganalisis dan membuat tag optimal...', 'loading');
 
       // Use Claude AI to generate/suggest relevant tags
       const prompt = `Saya perlu tag YouTube yang optimal untuk video ini:
-Judul: "${videoTitle}"
-Channel: "${videoChannel}"
+${videoTitle ? `Judul: "${videoTitle}"` : `(Judul tidak tersedia)`}
+${videoChannel ? `Channel: "${videoChannel}"` : ''}
 Video ID: ${videoId}
 URL: https://www.youtube.com/watch?v=${videoId}
 
